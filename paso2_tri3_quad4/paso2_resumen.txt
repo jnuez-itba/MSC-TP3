@@ -1,0 +1,63 @@
+PASO 2 - Elementos lineales Tri3 y Quad4
+========================================
+
+Commit: "Agrega clase base Element2D y elementos Tri3 y Quad4"
+
+Objetivo
+--------
+Crear los primeros elementos de sólido 2D. En lugar de programar cada elemento
+desde cero, se arma una clase base (Element2D) que hace todo el cálculo
+común. Cada elemento concreto solo define sus funciones de forma y su regla
+de integración.
+
+Los elementos mantienen la misma "interfaz" que Bar2D de la cátedra
+(global_dofs() y stiffness_matrix()). Por eso el ensamblado (DenseMatrix), los
+apoyos y el solver se reusan sin cambios.
+
+
+Qué se hizo
+-----------
+
+1) source/elements/element2d.py  (nuevo) - clase base
+   Recibe: id, nodos, malla, material y espesor t.
+   Calcula:
+   - jacobian(): J = dN/dxi * coordenadas nodales. Pasa del elemento de
+     referencia (xi, eta) al elemento real (x, y).
+   - shape_derivatives_xy(): derivadas respecto de x, y con J^-1.
+     Si det(J) <= 0 da error, lo que indica que los nodos no están en sentido
+     antihorario o que el elemento está muy distorsionado.
+   - B_matrix(): matriz B (3 x 2n) que da epsilon = B * ue.
+   - compute_stiffness_matrix(): Ke = suma sobre los puntos de Gauss de
+     B^T * D * B * t * det(J) * peso.
+   - strain() y stress(): deformación y tensión en cualquier punto.
+   - stress_at_gauss_points(): tensiones en los puntos de Gauss.
+   - area(): área del elemento, que sirve para chequeos.
+
+2) source/elements/tri3.py  (nuevo)
+   Triángulo de 3 nodos (CST).
+   N1 = 1 - xi - eta, N2 = xi, N3 = eta. Usa 1 punto de Gauss.
+
+3) source/elements/quad4.py  (nuevo)
+   Cuadrilátero de 4 nodos.
+   Ni = 1/4 (1 + xi*xi_i)(1 + eta*eta_i). Usa 2x2 puntos de Gauss.
+
+4) tests/test_elements.py  (nuevo)
+   Para cada elemento se verifica que:
+   - las funciones de forma suman 1 y valen 1 en su nodo y 0 en los demás;
+   - el área calculada coincide con el área geométrica;
+   - Ke es simétrica;
+   - Ke tiene exactamente 3 modos de energía nula (2 traslaciones y
+     1 rotación);
+   - un movimiento de cuerpo rígido no genera tensiones;
+   - un desplazamiento lineal da la tensión constante exacta;
+   - el Tri3 coincide con la fórmula cerrada del CST;
+   - un elemento con nodos en sentido horario se rechaza.
+   Resultado: 15 de 15 tests pasan (contando los del paso 1).
+
+
+Cómo se usa en el paso siguiente
+--------------------------------
+En el paso 3 se arman mallas de varios elementos distorsionados y se hace el
+patch test: se ensambla K con DenseMatrix (sin cambios), se imponen
+desplazamientos lineales en el borde y se verifica que los nodos interiores
+reproduzcan la solución exacta.
