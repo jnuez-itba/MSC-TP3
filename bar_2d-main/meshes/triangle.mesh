@@ -1,0 +1,12 @@
+# n_nodes n_elements dim
+3 3 2
+
+# node_number x y
+1 0.0 0.0
+2 1.0 0.0
+3 1.0 1.0
+
+# element_number element_type connectivity
+1 BAR2D 1 2
+2 BAR2D 2 3
+3 BAR2D 1 3

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian" compressor="vtkZLibDataCompressor">
+<!--This file was created by meshio v5.3.5-->
+<UnstructuredGrid>
+<Piece NumberOfPoints="24" NumberOfCells="45">
+<Points>
+<DataArray type="Float64" Name="Points" NumberOfComponents="3" format="binary">
+AQAAAACAAABAAgAAaQAAAA==eJxjYMALHLALC+AQl8AhroBDXAWHuAYOcR0c4gY4xI1wiJvgEDfDIW6BQxwWPg/sUYVh4fMBTRwWPj/QxOHhg2YPLHxY0MRh4cOBJg4LH3T18PBBE4eFD7p7YOGD7n5Y+CD8CwDQHRFr
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="Int64" Name="connectivity" format="binary">
+AQAAAACAAADQAgAAeAAAAA==eJxd0DcOAlEQBcGPZ/FmgfvflABVQE/Smqz0xvjdIl2mq3SdbtJtukv36ZQe0mN6Gv93Ti/pNb2l9/SRPtM5faXv9JPy25vb3tz25rY3t7257c1tb257c9ub297c9ubm5ePl4+Xj5eOtz8/Hy8fLx8vH+wUtuwQh
+</DataArray>
+<DataArray type="Int64" Name="offsets" format="binary">
+AQAAAACAAABoAQAAYgAAAA==eJwtxdEGwgAAAMDJTCZJMkmSZJJkMplMksxkMplk//8hPXT3coPgL3TkoWOPPPbEU8+ceO6Fl1557Y23Tr3z3gcfnfnk3GcXvrj01Tff/XDl2k83frn1250//rr3D/cFCBc=
+</DataArray>
+<DataArray type="Int64" Name="types" format="binary">
+AQAAAACAAABoAQAAEAAAAA==eJxjZoAA5lGapjQAYnAAiA==
+</DataArray>
+</Cells>
+<PointData>
+<DataArray type="Float64" Name="displacement" NumberOfComponents="3" format="binary">
+AQAAAACAAABAAgAAIQEAAA==eJxjYMAO7rvIvH5kJmUv17qtdc355P0w8aVgcS17i3X8T7i1c+HiccahBlorje2V/OcUXOguhItHgtVb2Z+JO31OJ7YYLr561cdLvkkO9mYJ66ZcCyqBi8uCzXG2Nw5TdN83AyHev3tHL9sHN3tVNPXsYPO97Deimd9xpt5jf62v/Wc/VPc0g+0NsN+1FtX9+/MWM+5hDbJvaEH173cjkHuC7dHDp2z2ToUvFg728mjh8/KWqNTsv672VmjhE/nQcVN5sAdG+MiKL+asiPewP4vm/niDHAPhLW725mj+PWGEPXx8TO0MHOc52KujqTeby7dux1Nb+01o5rNzXozZ+dfW/gta+Kh3T3HbGeKIET5PT32wT5B0t29ECx8Ak2enGw==
+</DataArray>
+</PointData>
+<CellData>
+<DataArray type="Float64" Name="stress" format="binary">
+AQAAAACAAABoAQAArwAAAA==eJyzYWRguCCU7PiCAULvhtLdUHoilPZAo7Oh9AIo3Ycmbgul25bzNImtTD7YAKVNoDQvGv1hGYQWRlMH4z+Fyjeg0UBrXpR5tO9DomEAyC8H8RXiFxQhiwP5Tftg8qGhoaae3PVo+tr3+f+9VcXA0WUH1W+X83vmb7ZNFXYwRcZrw/5K8/fa7eb2XdF1pdKu7dGzvx/Fau3mLk8LWl9WALdXru6M0lmLSfsA6nJ3yQ==
+</DataArray>
+</CellData>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>
