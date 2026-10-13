@@ -1,0 +1,63 @@
+PASO 1 - Material de tensión plana y cuadratura de Gauss
+=========================================================
+
+Commit: "Agrega matriz D de tensión plana y cuadratura de Gauss"
+
+Objetivo
+--------
+El código de la cátedra resuelve barras, donde alcanza con E y la rigidez sale
+de una fórmula cerrada (EA/L). Para elementos de sólido 2D faltan dos cosas:
+
+  1. Una matriz constitutiva D, porque en 2D hay 3 tensiones y 3 deformaciones.
+  2. Integración numérica, porque la rigidez Ke = integral de B^T D B t dA no
+     tiene fórmula cerrada para elementos generales.
+
+Este paso agrega esas dos piezas. Todavía no hay elementos nuevos, que vienen
+en el paso 2.
+
+
+Qué se hizo
+-----------
+
+1) source/materials/linear_elastic.py  (modificado)
+   - Calcula la matriz D de estado plano de tensión y la guarda en
+     material.D:
+
+             E      | 1   nu     0     |
+        D = ------  | nu  1      0     |
+            1-nu^2  | 0   0   (1-nu)/2 |
+
+   - Agrega la densidad (parámetro opcional, por defecto 0), que se va a usar
+     para el peso propio de la presa.
+   - Valida que E > 0 y que 0 <= nu < 0.5.
+   - Sigue siendo compatible con bar.py y bar_roof.py.
+
+2) source/quadrature/gauss.py  (nuevo)
+   Reglas de integración numérica. Cada una devuelve puntos y pesos:
+   - gauss_legendre_1d(n): 1 a 4 puntos en [-1, 1]. Se usa para las cargas
+     sobre bordes.
+   - gauss_quadrilateral(n): n x n puntos para cuadriláteros. Quad4 usa 2x2
+     y Q9 usa 3x3.
+   - gauss_triangle(n): 1, 3 o 6 puntos para triángulos. Tri3 usa 1 y Tri6
+     usa 3.
+
+3) tests/  (nuevo)
+   - test_material.py: verifica que D sea simétrica, que reproduzca la ley de
+     Hooke en tracción uniaxial y que el término de corte sea G.
+   - test_quadrature.py: verifica que cada regla integre exactamente los
+     polinomios que corresponden a su grado.
+   Resultado: 6 de 6 tests pasan.
+
+4) Configuración
+   - requirements.txt: se agrega pytest.
+   - pytest.ini: indica dónde están los tests.
+   - README.md: descripción del proyecto.
+
+
+Cómo se usa en el paso siguiente
+--------------------------------
+Cada elemento va a recorrer los puntos de Gauss y en cada uno sumar:
+
+    Ke += B^T * D * B * t * det(J) * peso
+
+D sale del material y los puntos y pesos salen de la cuadratura.
