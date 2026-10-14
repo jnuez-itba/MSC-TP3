@@ -1,0 +1,22 @@
+# Patch test MacNeal-Harder: rectangulo 0.24 x 0.12
+# 4 nodos de borde (1-4) y 4 nodos interiores irregulares (5-8)
+
+# n_nodes n_elements dim
+8 5 2
+
+# node_number x y
+1 0.00 0.00
+2 0.24 0.00
+3 0.24 0.12
+4 0.00 0.12
+5 0.04 0.02
+6 0.18 0.03
+7 0.16 0.08
+8 0.08 0.08
+
+# element_number element_type connectivity (antihoraria)
+1 QUAD4 1 2 6 5
+2 QUAD4 2 3 7 6
+3 QUAD4 3 4 8 7
+4 QUAD4 4 1 5 8
+5 QUAD4 5 6 7 8

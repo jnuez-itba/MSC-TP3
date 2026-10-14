@@ -1,0 +1,68 @@
+PASO 3 - Patch test para Tri3 y Quad4
+=====================================
+
+Commit: "Agrega patch test para Tri3 y Quad4"
+
+Objetivo
+--------
+Verificar que los elementos Tri3 y Quad4 pasan el patch test, como pide el
+enunciado. El patch test comprueba que un parche de elementos distorsionados
+reproduzca EXACTAMENTE un estado de tensión constante. Es una condición
+necesaria para que el elemento converja al refinar la malla.
+
+
+Qué se hizo
+-----------
+
+1) meshes/patch/patch_quad4.mesh y patch_tri3.mesh  (nuevos)
+   Parche clásico de MacNeal-Harder: un rectángulo de 0.24 x 0.12 con
+   4 nodos de borde y 4 nodos interiores en posiciones irregulares.
+   - Quad4: 5 cuadriláteros distorsionados.
+   - Tri3: los mismos nodos, divididos en 10 triángulos.
+   Se usa el formato de malla de la cátedra, sin cambios.
+
+2) source/elements/factory.py  (nuevo)
+   Crea el elemento que corresponde según el texto de la malla ("TRI3",
+   "QUAD4"). create_elements() arma todos los elementos de la malla.
+   Para agregar un elemento nuevo solo hay que sumar una línea al
+   diccionario ELEMENT_TYPES.
+
+3) source/verification/patch.py  (nuevo)
+   run_patch_test(malla):
+   - ensambla K con DenseMatrix (código de la cátedra);
+   - en los nodos del borde impone el campo lineal exacto
+        u = a0 + a1 x + a2 y,   v = b0 + b1 x + b2 y
+     usando apply_dirichlet_bc con valor distinto de cero;
+   - deja libres los nodos interiores y resuelve K u = f;
+   - mide el error en los desplazamientos de los nodos interiores y en la
+     tensión de todos los puntos de Gauss, comparando con D * epsilon.
+
+4) patch_test.py  (nuevo, en la raíz)
+   Script que corre el patch test de cada malla e imprime una tabla.
+   Se ejecuta con:  python patch_test.py
+
+5) tests/test_patch.py  (nuevo)
+   La misma verificación dentro de pytest.
+
+6) .gitattributes  (nuevo)
+   Hace que git guarde los archivos con fin de línea LF y saca el aviso de
+   LF/CRLF.
+
+
+Resultado
+---------
+    Tipo     Elementos  Interiores     Error u (rel) Error sigma (rel)
+    TRI3            10           4          3.68e-16          1.49e-14   PASA
+    QUAD4            5           4          3.68e-16          1.13e-14   PASA
+
+Los errores son del orden de la precisión de la máquina (1e-16 a 1e-14), así
+que los dos elementos pasan el patch test. Tests: 17 de 17 pasan.
+
+Además se verificó que el test detecta errores: al meter un error a propósito
+en la matriz B, los dos elementos dan FALLA (error en tensión del 46%).
+
+
+Cómo se usa en el paso siguiente
+--------------------------------
+En el paso 4 se agregan los elementos Tri6 y Q9 con sus mallas de parche
+(con nodos intermedios en los lados) y se suman a patch_test.py.

@@ -1,0 +1,27 @@
+# Patch test MacNeal-Harder: rectangulo 0.24 x 0.12
+# Mismos nodos que patch_quad4.mesh, cada cuadrilatero dividido en 2 triangulos
+
+# n_nodes n_elements dim
+8 10 2
+
+# node_number x y
+1 0.00 0.00
+2 0.24 0.00
+3 0.24 0.12
+4 0.00 0.12
+5 0.04 0.02
+6 0.18 0.03
+7 0.16 0.08
+8 0.08 0.08
+
+# element_number element_type connectivity (antihoraria)
+1 TRI3 1 2 6
+2 TRI3 1 6 5
+3 TRI3 2 3 7
+4 TRI3 2 7 6
+5 TRI3 3 4 8
+6 TRI3 3 8 7
+7 TRI3 4 1 5
+8 TRI3 4 5 8
+9 TRI3 5 6 7
+10 TRI3 5 7 8
