@@ -61,3 +61,111 @@ def plot_base_pressure(geometry, stability_result, curves, filename=None,
         pyplot.show()
     else:
         pyplot.close(figure)
+
+
+def plot_safety_factor_vs_area(results, families, filename=None, show=True,
+                               original=None):
+    """Factor de seguridad al vuelco en función del área de hormigón, una
+    curva por familia de variantes.
+
+    results   {familia: [(valor, resultado)]}
+    families  {familia: etiqueta}
+    original  resultado de la presa del enunciado (se marca aparte)
+    """
+    figure, axes = pyplot.subplots(figsize=(9, 5.5))
+
+    k = 0
+    for family in results:
+        points = sorted(results[family], key=lambda item: item[1]["area"])
+        areas = [r["area"] for v, r in points]
+        factors = [r["safety_factor"] for v, r in points]
+
+        color = CASE_COLORS[k % len(CASE_COLORS)]
+        axes.plot(areas, factors, color=color, linewidth=2.0, marker="o",
+                  markersize=7, label=families[family])
+
+        # etiqueta directa al final de cada curva
+        axes.annotate(families[family], (areas[-1], factors[-1]),
+                      textcoords="offset points", xytext=(6, 0),
+                      va="center", fontsize=8, color="#404040")
+        k = k + 1
+
+    if original is not None:
+        axes.plot([original["area"]], [original["safety_factor"]], linestyle="none",
+                  marker="*", markersize=16, color="#303030",
+                  label="Presa del enunciado")
+
+    axes.set_xlabel("Área de hormigón [m²]  (volumen por metro de presa)")
+    axes.set_ylabel("Factor de seguridad al vuelco  Ms / Md")
+    axes.set_title("Variaciones de geometría: factor de seguridad vs hormigón")
+    axes.grid(True, color="#e6e6e6", linewidth=0.6)
+    axes.legend(loc="upper left", fontsize=9)
+
+    x_min, x_max = axes.get_xlim()
+    axes.set_xlim(x_min, x_max + 0.18 * (x_max - x_min))
+
+    figure.tight_layout()
+
+    if filename is not None:
+        directory = os.path.dirname(filename)
+        if directory != "":
+            os.makedirs(directory, exist_ok=True)
+        figure.savefig(filename, dpi=150)
+
+    if show:
+        pyplot.show()
+    else:
+        pyplot.close(figure)
+
+
+def plot_sections(designs, filename=None, show=True):
+    """Dibuja el contorno de varias secciones superpuestas.
+
+    designs  lista de (etiqueta, geometría, factor de seguridad)
+    """
+    figure, axes = pyplot.subplots(figsize=(8, 9))
+
+    water_drawn = False
+
+    for k in range(len(designs)):
+        label, geometry, fs = designs[k]
+        corners = geometry.corners()
+        xs = [p[0] for p in corners] + [corners[0][0]]
+        ys = [p[1] for p in corners] + [corners[0][1]]
+
+        if k == 0:
+            axes.fill(xs, ys, color="#d9d9d9", zorder=1)
+            axes.plot(xs, ys, color="#303030", linewidth=2.0, zorder=3,
+                      label=label + "  (FS = {:.2f})".format(fs))
+        else:
+            color = CASE_COLORS[(k - 1) % len(CASE_COLORS)]
+            axes.plot(xs, ys, color=color, linewidth=2.0, linestyle="--", zorder=3,
+                      label=label + "  (FS = {:.2f})".format(fs))
+
+        if not water_drawn:
+            hw = geometry.water_level()
+            x_left = min(min(p[0] for p in d[1].corners()) for d in designs) - 2.0
+            axes.plot([x_left, 0.0], [hw, hw], color="#2a6fdb", linewidth=1.2)
+            axes.annotate("nivel del agua ({:g} m)".format(hw), (x_left, hw),
+                          textcoords="offset points", xytext=(2, 4), fontsize=8,
+                          color="#2a6fdb")
+            water_drawn = True
+
+    axes.set_xlabel("x [m]")
+    axes.set_ylabel("y [m]")
+    axes.set_aspect("equal")
+    axes.set_title("Secciones con la misma área de hormigón")
+    axes.grid(True, color="#e6e6e6", linewidth=0.6)
+    axes.legend(loc="upper center", bbox_to_anchor=(0.5, -0.08), fontsize=8, ncol=1)
+    figure.tight_layout()
+
+    if filename is not None:
+        directory = os.path.dirname(filename)
+        if directory != "":
+            os.makedirs(directory, exist_ok=True)
+        figure.savefig(filename, dpi=150, bbox_inches="tight")
+
+    if show:
+        pyplot.show()
+    else:
+        pyplot.close(figure)

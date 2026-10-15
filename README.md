@@ -48,6 +48,7 @@ python -m pytest         # todos los tests
 python ejemplo_viga.py   # viga en voladizo: comparación con teoría y deformada
 python generar_malla_presa.py   # malla de la presa (ver abajo)
 python analisis_presa.py        # análisis de la presa (ver abajo)
+python estudio_geometria.py     # variaciones de geometría (ver abajo)
 python bar.py            # ejemplos de barras de la clase
 python bar_roof.py
 ```
@@ -169,6 +170,23 @@ tensión es singular (crece al refinar), así que la escala de colores se
 satura con los valores a más de 1 m de esas esquinas.
 
 El reporte queda en `results/presa_resultados.txt`.
+
+## Variaciones de geometría
+
+```
+python estudio_geometria.py            # cálculo manual + verificación FEM
+python estudio_geometria.py --sin-fem  # solo cálculo manual
+```
+
+Recorre cuatro familias de variantes (`source/dam/study.py`): base más
+ancha hacia aguas abajo, talón extendido aguas arriba, cresta más ancha y
+talud aguas arriba con la misma base. Para cada una informa el factor de
+seguridad al vuelco, la posición de la resultante (tercio central), las
+presiones en la base, la fricción necesaria para no deslizar y, con FEM, el
+momento de las reacciones, el desplazamiento de la cresta y la tensión en el
+paramento. Compara las variantes con la misma cantidad de hormigón.
+
+El reporte queda en `results/estudio_geometria.txt`.
 
 ## Formato de malla
 
