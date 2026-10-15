@@ -52,6 +52,12 @@ class Quad9(Element2D):
     # lados (inicio, fin, medio): 1-2-5, 2-3-6, 3-4-7, 4-1-8
     side_nodes = [(0, 1, 4), (1, 2, 5), (2, 3, 6), (3, 0, 7)]
 
+    natural_nodes = [
+        (-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0),
+        (0.0, -1.0), (1.0, 0.0), (0.0, 1.0), (-1.0, 0.0),
+        (0.0, 0.0),
+    ]
+
     # coordenadas naturales de cada nodo, como índice en lagrange_1d:
     # 0 -> s = -1,  1 -> s = 0,  2 -> s = 1
     xi_index = [0, 2, 2, 0, 1, 2, 1, 0, 1]

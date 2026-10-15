@@ -12,6 +12,7 @@ class Element2D:
         number_of_nodes            cantidad de nodos del elemento
         side_nodes                 nodos locales de cada lado: (inicio, fin)
                                    o (inicio, fin, medio)
+        natural_nodes              coordenadas naturales (xi, eta) de cada nodo
         shape_functions(xi, eta)   vector N con las funciones de forma
         shape_derivatives(xi, eta) matriz 2 x n con [dN/dxi; dN/deta]
         quadrature()               puntos y pesos de Gauss
@@ -28,6 +29,7 @@ class Element2D:
     dofs_per_node = 2
     number_of_nodes = 0
     side_nodes = []
+    natural_nodes = []
 
     def __init__(self, global_id, node_global_ids, mesh, material, thickness):
         if len(node_global_ids) != self.number_of_nodes:
@@ -208,6 +210,21 @@ class Element2D:
             stresses.append(self.stress(u, points[p][0], points[p][1]))
 
         return stresses
+
+    def stress_at_nodes(self, u):
+        """Tensiones [sxx, syy, txy] evaluadas en cada nodo del elemento.
+
+        Se evalúan las funciones de forma en las coordenadas naturales de
+        cada nodo. Como la tensión es discontinua entre elementos, en la
+        malla se promedian los valores de los elementos que comparten un nodo
+        (ver source/output/postprocess.py).
+        """
+        stresses = []
+
+        for xi, eta in self.natural_nodes:
+            stresses.append(self.stress(u, xi, eta))
+
+        return numpy.array(stresses)
 
     def physical_coordinates(self, xi, eta):
         """(x, y) del punto de coordenadas naturales (xi, eta)."""

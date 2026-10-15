@@ -33,6 +33,11 @@ class Tri6(Element2D):
     # lados (inicio, fin, medio): 1-2-4, 2-3-5, 3-1-6
     side_nodes = [(0, 1, 3), (1, 2, 4), (2, 0, 5)]
 
+    natural_nodes = [
+        (0.0, 0.0), (1.0, 0.0), (0.0, 1.0),
+        (0.5, 0.0), (0.5, 0.5), (0.0, 0.5),
+    ]
+
     def shape_functions(self, xi, eta):
         L1 = 1.0 - xi - eta
         L2 = xi

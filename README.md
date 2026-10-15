@@ -28,7 +28,7 @@ source/
   quadrature/    reglas de integración de Gauss
   systems/       matriz global y condiciones de borde
   solvers/       resolución del sistema lineal
-  output/        exportación de resultados (ParaView)
+  output/        post-proceso, exportación a ParaView y gráficos
   verification/  patch test (por desplazamientos y por fuerzas)
 meshes/          archivos de malla
 tests/           tests automáticos (pytest)
@@ -44,10 +44,37 @@ pip install -r requirements.txt
 
 ```
 python patch_test.py     # patch test de los 4 elementos (versiones A y B)
-pytest                   # todos los tests
+python -m pytest         # todos los tests
+python ejemplo_viga.py   # viga en voladizo: comparación con teoría y deformada
 python bar.py            # ejemplos de barras de la clase
 python bar_roof.py
 ```
+
+## Visualización
+
+La solución se puede ver sobre la configuración deformada, con un factor de
+escala elegible, de dos formas. Ejemplo con la viga:
+
+```
+python ejemplo_viga.py --scale 50 --field sigma_1
+```
+
+1. **matplotlib** (`source/output/plot.py`): `plot_deformed(mesh, elements, u,
+   field, scale)` dibuja la malla deformada (desplazamientos x `scale`)
+   coloreada con el campo elegido, sobre la malla original en gris. Si no se
+   da `scale`, se elige uno automático (desplazamiento máximo = 5% del modelo).
+   Campos: `sigma_1`, `sigma_2`, `sigma_xx`, `sigma_yy`, `tau_xy`, `von_mises`,
+   `displacement`. Los campos con signo usan una escala divergente centrada en
+   cero (rojo tracción, azul compresión).
+
+2. **ParaView** (`source/output/paraview.py`): `write_solid_results` escribe un
+   `.vtu` con los desplazamientos y todas las tensiones en los nodos. En
+   ParaView: abrir el archivo, aplicar el filtro **Warp By Vector** con el
+   vector `displacement` y elegir el factor de escala; colorear con el campo
+   que se quiera.
+
+Las tensiones nodales se obtienen evaluando la tensión de cada elemento en sus
+nodos y promediando entre los elementos que comparten cada nodo.
 
 ## Cargas, apoyos y reacciones
 
