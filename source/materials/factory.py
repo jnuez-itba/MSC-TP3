@@ -26,3 +26,13 @@ def create_material(material_type, parameters):
     density = float(parameters[2])
 
     return LinearElastic(E, nu, density, MATERIAL_TYPES[material_type])
+
+
+def material_type_name(material):
+    """Nombre del tipo de material para el archivo de malla (inverso de
+    create_material)."""
+    for name in MATERIAL_TYPES:
+        if MATERIAL_TYPES[name] == material.hypothesis:
+            return name
+
+    raise ValueError("Unknown material hypothesis: " + str(material.hypothesis))

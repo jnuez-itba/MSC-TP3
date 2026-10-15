@@ -211,3 +211,84 @@ def plot_deformed(mesh, elements, u, field="sigma_1", scale=None,
         pyplot.close(figure)
 
     return scale
+
+
+# Colores fijos para marcar conjuntos (siempre en el mismo orden)
+SET_COLORS = ["#2a6fdb", "#e07b00", "#1b9e77", "#c2185b", "#7b4fd6", "#8c6d1f"]
+
+
+def plot_mesh(mesh, elements, side_sets=None, node_sets=None, filename=None,
+              show=True, title="Malla"):
+    """Dibuja la malla y resalta conjuntos de lados y de nodos.
+
+    side_sets  lista de nombres de SideSets a resaltar (líneas gruesas)
+    node_sets  lista de nombres de NodeSets a resaltar (puntos)
+    """
+    if side_sets is None:
+        side_sets = []
+    if node_sets is None:
+        node_sets = []
+
+    coordinates = numpy.array([[node.x, node.y] for node in mesh.nodes])
+
+    width = coordinates[:, 0].max() - coordinates[:, 0].min()
+    height = coordinates[:, 1].max() - coordinates[:, 1].min()
+
+    if width > 2.0 * height:
+        figure, axes = pyplot.subplots(figsize=(10, 1.0 + 8.0 * height / width + 1.5))
+    else:
+        figure, axes = pyplot.subplots(figsize=(2.0 + 7.0 * width / height + 1.5, 9))
+
+    draw_edges(axes, elements, coordinates, color="#9a9a9a", linewidth=0.5)
+
+    axes.plot(coordinates[:, 0], coordinates[:, 1], linestyle="none",
+              marker=".", markersize=2, color="#606060")
+
+    color_index = 0
+
+    for name in side_sets:
+        color = SET_COLORS[color_index % len(SET_COLORS)]
+        color_index = color_index + 1
+
+        first = True
+        for element_id, side in mesh.side_sets[name]:
+            element = elements[element_id]
+            node_ids = [element.node_global_ids[a] for a in element.side_nodes[side]]
+            curve = side_curve(coordinates[node_ids])
+            axes.plot(curve[:, 0], curve[:, 1], color=color, linewidth=3.0,
+                      label="SideSet " + name if first else None)
+            first = False
+
+    for name in node_sets:
+        color = SET_COLORS[color_index % len(SET_COLORS)]
+        color_index = color_index + 1
+
+        ids = mesh.node_sets[name]
+        axes.plot(coordinates[ids, 0], coordinates[ids, 1], linestyle="none",
+                  marker="o", markersize=8, color=color, markeredgecolor="white",
+                  label="NodeSet " + name)
+
+    n_nodes = mesh.number_of_nodes()
+    n_elements = mesh.number_of_elements()
+    axes.set_title(title + "\n" + str(n_elements) + " elementos "
+                   + mesh.element_types[0] + ", " + str(n_nodes) + " nodos")
+
+    axes.set_xlabel("x [m]")
+    axes.set_ylabel("y [m]")
+    axes.set_aspect("equal")
+
+    if len(side_sets) + len(node_sets) > 0:
+        axes.legend(loc="upper right", fontsize=8)
+
+    figure.tight_layout()
+
+    if filename is not None:
+        directory = os.path.dirname(filename)
+        if directory != "":
+            os.makedirs(directory, exist_ok=True)
+        figure.savefig(filename, dpi=150)
+
+    if show:
+        pyplot.show()
+    else:
+        pyplot.close(figure)

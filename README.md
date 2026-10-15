@@ -24,13 +24,13 @@ Todos pasan el patch test (`python patch_test.py`).
 source/
   elements/      elementos finitos (Element2D, Tri3, Quad4, Tri6, Quad9)
   materials/     modelos de material
-  mesh/          nodos y lectura de mallas
+  mesh/          nodos, lectura y escritura de mallas, generadores
   quadrature/    reglas de integración de Gauss
   systems/       matriz global y condiciones de borde
   solvers/       resolución del sistema lineal
   output/        post-proceso, exportación a ParaView y gráficos
   verification/  patch test (por desplazamientos y por fuerzas)
-meshes/          archivos de malla
+meshes/          archivos de malla (presa/: mallas de la presa)
 tests/           tests automáticos (pytest)
 ```
 
@@ -46,6 +46,7 @@ pip install -r requirements.txt
 python patch_test.py     # patch test de los 4 elementos (versiones A y B)
 python -m pytest         # todos los tests
 python ejemplo_viga.py   # viga en voladizo: comparación con teoría y deformada
+python generar_malla_presa.py   # malla de la presa (ver abajo)
 python bar.py            # ejemplos de barras de la clase
 python bar_roof.py
 ```
@@ -116,6 +117,29 @@ Fx, Fy, Mz = node_set_reaction_resultant(mesh, R, "base", (18.0, 0.0))
 Las cargas sobre lados se integran con 3 puntos de Gauss: es exacto para una
 presión lineal. Si la presión tiene un quiebre (nivel del agua), conviene que
 la malla tenga un nodo en ese nivel.
+
+## Malla de la presa
+
+`generar_malla_presa.py` genera la sección de la presa (H = 30 m, base 18 m,
+cresta 3 m, borde libre 2 m) y la escribe en el formato de malla:
+
+```
+python generar_malla_presa.py                          # Q9, elementos de ~1 m
+python generar_malla_presa.py --element TRI6 --size 0.5
+python generar_malla_presa.py --batter 3               # talud aguas arriba
+```
+
+La sección es un cuadrilátero y se malla con un mapeo bilineal
+(`source/mesh/generators.py`). Las filas de nodos son horizontales y una de
+ellas cae exactamente en el nivel del agua (28 m), para que la presión
+hidrostática se integre sin error. La malla incluye:
+
+- NodeSets: `base`, `heel` (talón aguas arriba), `toe` (pie aguas abajo),
+  `upstream`, `downstream`, `crest`.
+- SideSets: `base`, `upstream`, `upstream_wet` (bajo el agua), `downstream`,
+  `crest`.
+
+En `meshes/presa/` están las mallas por defecto para los 4 tipos de elemento.
 
 ## Formato de malla
 
