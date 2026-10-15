@@ -1,19 +1,21 @@
 """Patch test por desplazamientos impuestos.
 
 1. Se arma un parche de elementos distorsionados con nodos interiores.
-2. En los nodos del borde se impone un campo lineal exacto:
+2. En los nodos del borde (NodeSet "boundary" del archivo de malla) se impone
+   un campo lineal exacto:
        u = a0 + a1 x + a2 y
        v = b0 + b1 x + b2 y
 3. Los nodos interiores quedan libres y sin carga. Se resuelve K u = f.
 4. El elemento pasa si:
      - los nodos interiores reproducen el campo lineal exacto, y
      - la tensión en todos los puntos de Gauss es la constante D * epsilon.
+
+El material, el espesor y el tipo de elemento se leen del archivo de malla.
 """
 
 import numpy
 
 from source.mesh.mesh import Mesh
-from source.materials.linear_elastic import LinearElastic
 from source.elements.factory import create_elements
 from source.systems.dense_matrix import DenseMatrix
 from source.systems.boundary_conditions import apply_dirichlet_bc
@@ -23,11 +25,6 @@ from source.solvers.linear import solve
 # Campo lineal impuesto (coeficientes arbitrarios)
 A = [1.0e-3, 2.0e-3, -1.0e-3]
 B = [-2.0e-3, 0.5e-3, -3.0e-3]
-
-# Hormigón del TP
-E = 21.0e9
-NU = 0.2
-THICKNESS = 1.0
 
 
 def exact_displacement(x, y):
@@ -42,36 +39,16 @@ def exact_strain():
     return numpy.array([A[1], B[2], A[2] + B[1]])
 
 
-def boundary_nodes(mesh, tolerance=1.0e-12):
-    """Nodos sobre el contorno del rectángulo que encierra la malla."""
-    xs = [node.x for node in mesh.nodes]
-    ys = [node.y for node in mesh.nodes]
-
-    x_min = min(xs)
-    x_max = max(xs)
-    y_min = min(ys)
-    y_max = max(ys)
-
-    nodes = []
-
-    for node in mesh.nodes:
-        on_x = abs(node.x - x_min) < tolerance or abs(node.x - x_max) < tolerance
-        on_y = abs(node.y - y_min) < tolerance or abs(node.y - y_max) < tolerance
-
-        if on_x or on_y:
-            nodes.append(node.global_id)
-
-    return nodes
-
-
 def run_patch_test(mesh_filename):
     """Corre el patch test y devuelve un diccionario con los errores."""
     mesh = Mesh()
     mesh.read(mesh_filename)
     mesh.dofs_per_node = 2
 
-    material = LinearElastic(E, NU)
-    elements = create_elements(mesh, material, THICKNESS)
+    if "boundary" not in mesh.node_sets:
+        raise ValueError("Patch mesh needs a NodeSet called 'boundary'")
+
+    elements = create_elements(mesh)
 
     # Ensamblado (código de la cátedra, sin cambios)
     number_of_dofs = mesh.number_of_dofs()
@@ -83,7 +60,7 @@ def run_patch_test(mesh_filename):
     f = numpy.zeros(number_of_dofs)
 
     # Desplazamientos exactos impuestos en el borde
-    fixed = boundary_nodes(mesh)
+    fixed = mesh.node_sets["boundary"]
 
     for node_id in fixed:
         node = mesh.node(node_id)
@@ -115,11 +92,13 @@ def run_patch_test(mesh_filename):
             )
 
     # Error en tensiones en todos los puntos de Gauss
-    stress_exact = material.D @ exact_strain()
-    stress_scale = numpy.abs(stress_exact).max()
     stress_error = 0.0
+    stress_scale = 0.0
 
     for element in elements:
+        stress_exact = element.material.D @ exact_strain()
+        stress_scale = max(stress_scale, numpy.abs(stress_exact).max())
+
         for stress in element.stress_at_gauss_points(u):
             stress_error = max(stress_error, numpy.abs(stress - stress_exact).max())
 
@@ -128,5 +107,5 @@ def run_patch_test(mesh_filename):
         "interior_nodes": len(interior),
         "displacement_error": displacement_error / displacement_scale,
         "stress_error": stress_error / stress_scale,
-        "stress_exact": stress_exact,
+        "stress_exact": elements[0].material.D @ exact_strain(),
     }

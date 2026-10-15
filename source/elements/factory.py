@@ -4,7 +4,8 @@ from source.elements.tri6 import Tri6
 from source.elements.quad9 import Quad9
 
 
-# Tipo de elemento en el archivo de malla -> clase
+# Tipo de elemento -> clase
+# (Mesh traduce familia + orden del archivo a estos nombres)
 ELEMENT_TYPES = {
     "TRI3": Tri3,
     "QUAD4": Quad4,
@@ -14,7 +15,7 @@ ELEMENT_TYPES = {
 
 
 def create_element(element_type, global_id, node_global_ids, mesh, material, thickness):
-    """Crea el elemento que corresponde al texto del archivo de malla."""
+    """Crea el elemento que corresponde al tipo indicado."""
     if element_type not in ELEMENT_TYPES:
         raise ValueError("Unknown element type: " + element_type)
 
@@ -23,8 +24,9 @@ def create_element(element_type, global_id, node_global_ids, mesh, material, thi
     return element_class(global_id, node_global_ids, mesh, material, thickness)
 
 
-def create_elements(mesh, material, thickness):
-    """Crea todos los elementos de la malla con un mismo material y espesor."""
+def create_elements(mesh):
+    """Crea todos los elementos de la malla, cada uno con el material y el
+    espesor que indica el archivo."""
     elements = []
 
     for e in range(mesh.number_of_elements()):
@@ -33,8 +35,8 @@ def create_elements(mesh, material, thickness):
             mesh.element_global_ids[e],
             mesh.connectivity[e],
             mesh,
-            material,
-            thickness,
+            mesh.element_material(e),
+            mesh.thickness,
         )
 
         elements.append(element)

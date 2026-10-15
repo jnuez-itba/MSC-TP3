@@ -1,0 +1,97 @@
+# =============================================================================
+# Ejemplo comentado del formato de malla
+# =============================================================================
+#
+# Placa de 2 x 1 con un cuadrilátero cuadrático (Q9) y dos triángulos
+# cuadráticos (Tri6), de dos materiales distintos. Sirve como referencia
+# del formato; ver README.md para la descripción completa.
+#
+#      4 ------- 3 ------ 9          y
+#      |         | \      |          ^
+#      |    1    |   \  3 |          |
+#      |         | 2   \  |          +--> x
+#      1 ------- 2 ------ 5
+#
+# Reglas generales:
+#   - Todo lo que sigue a un '#' es comentario.
+#   - Cada sección empieza con $Nombre y termina con $EndNombre.
+#   - Nodos y elementos se numeran desde 1, consecutivos y en orden.
+#   - Unidades consistentes (acá: m, Pa, kg/m3).
+
+# -----------------------------------------------------------------------------
+# Parámetros globales (opcional). Por ahora: espesor del sólido.
+# -----------------------------------------------------------------------------
+$Parameters
+thickness 1.0
+$EndParameters
+
+# -----------------------------------------------------------------------------
+# Materiales: id  tipo  E  nu  densidad
+#   tipos: ELASTIC_PLANE_STRESS  (tensión plana, szz = 0)
+#          ELASTIC_PLANE_STRAIN  (deformación plana, ezz = 0)
+# -----------------------------------------------------------------------------
+$Materials
+1  ELASTIC_PLANE_STRESS  21.0e9   0.2   2400.0
+2  ELASTIC_PLANE_STRESS  200.0e9  0.3   7850.0
+$EndMaterials
+
+# -----------------------------------------------------------------------------
+# Nodos: primera línea = cantidad; después  id  x  y
+# -----------------------------------------------------------------------------
+$Nodes
+15
+1   0.0  0.0
+2   1.0  0.0
+3   1.0  1.0
+4   0.0  1.0
+5   2.0  0.0
+6   1.5  0.0
+7   1.5  0.5
+8   1.0  0.5
+9   2.0  1.0
+10  2.0  0.5
+11  1.5  1.0
+12  0.5  0.0
+13  0.5  1.0
+14  0.0  0.5
+15  0.5  0.5
+$EndNodes
+
+# -----------------------------------------------------------------------------
+# Elementos: primera línea = cantidad; después
+#   id  familia  orden  material  nodos...
+#
+#   familia TRI,  orden 1 -> 3 nodos (Tri3)
+#   familia TRI,  orden 2 -> 6 nodos (Tri6):  vértices, después lados 1-2, 2-3, 3-1
+#   familia QUAD, orden 1 -> 4 nodos (Quad4)
+#   familia QUAD, orden 2 -> 9 nodos (Q9):    vértices, lados 1-2, 2-3, 3-4, 4-1, centro
+#
+#   Los vértices van en sentido ANTIHORARIO.
+#   Elementos vecinos deben tener el mismo orden: si no, el lado compartido
+#   tiene nodo medio de un lado y no del otro, y la malla queda no conforme.
+# -----------------------------------------------------------------------------
+$Elements
+3
+1  QUAD  2  1   1 2 3 4   12 8 13 14   15
+2  TRI   2  2   2 5 3   6 7 8
+3  TRI   2  2   5 9 3   10 11 7
+$EndElements
+
+# -----------------------------------------------------------------------------
+# Conjuntos de nodos (opcional), para apoyos:
+#   nombre  cantidad  ids...   (los ids pueden seguir en varias líneas)
+# -----------------------------------------------------------------------------
+$NodeSets
+left    3   1 14 4
+bottom  5   1 12 2 6 5
+$EndNodeSets
+
+# -----------------------------------------------------------------------------
+# Conjuntos de lados (opcional), para cargas distribuidas:
+#   nombre  cantidad  y después pares  elemento  lado
+#   El lado k va del vértice k al vértice k+1 (el último vuelve al 1).
+# -----------------------------------------------------------------------------
+$SideSets
+right  1   3 1
+top    2   1 3   3 2
+$EndSideSets
