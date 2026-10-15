@@ -18,19 +18,22 @@ from source.mesh.mesh import Mesh
 from source.materials.linear_elastic import LinearElastic
 from source.elements.factory import create_elements
 from source.output.plot import plot_mesh
+from source.dam.geometry import DamGeometry
 
 
 # ----------------------------------------------------------------------
-# Datos del enunciado
+# Datos del enunciado (geometría por defecto en source/dam/geometry.py)
 # ----------------------------------------------------------------------
-HEIGHT = 30.0       # altura [m]
-BASE = 18.0         # ancho de la base [m]
-FREEBOARD = 2.0     # borde libre [m]  -> nivel del agua = 28 m
-CREST = 3.0         # ancho de la cresta [m]
+DEFAULT = DamGeometry()
 
-E = 21.0e9          # hormigón H21 [Pa]
+HEIGHT = DEFAULT.height          # 30 m
+BASE = DEFAULT.base              # 18 m
+FREEBOARD = DEFAULT.freeboard    # 2 m  -> nivel del agua = 28 m
+CREST = DEFAULT.crest            # 3 m
+
+E = 21.0e9                       # hormigón H21 [Pa]
 NU = 0.2
-DENSITY = 2400.0    # [kg/m3]
+DENSITY = DEFAULT.concrete_density   # 2400 kg/m3
 
 
 parser = argparse.ArgumentParser(description="Malla de la presa de gravedad")

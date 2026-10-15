@@ -115,7 +115,7 @@ def draw_edges(axes, elements, coordinates, color, linewidth, linestyle="-"):
 
 
 def plot_deformed(mesh, elements, u, field="sigma_1", scale=None,
-                  filename=None, show=True, title=None):
+                  filename=None, show=True, title=None, color_limit=None):
     """Dibuja la configuración deformada coloreada con un campo.
 
     field     uno de FIELDS: sigma_1, sigma_2, sigma_xx, sigma_yy, tau_xy,
@@ -124,6 +124,10 @@ def plot_deformed(mesh, elements, u, field="sigma_1", scale=None,
               elige uno automático (desplazamiento máximo = 5% del modelo).
     filename  si se indica, guarda la figura (por ejemplo results/fig.png)
     show      abre la ventana con el gráfico
+    color_limit  límite de la escala de colores, en las unidades del gráfico
+              (MPa o mm). Los valores que lo superan se pintan con el color
+              extremo (escala saturada). Sirve cuando hay picos singulares,
+              por ejemplo en las esquinas de un empotramiento.
 
     Devuelve el factor de escala usado.
     """
@@ -149,17 +153,27 @@ def plot_deformed(mesh, elements, u, field="sigma_1", scale=None,
     # secuencial de un tono.
     v_min = values.min()
     v_max = values.max()
+    extend = "neither"
 
     if v_min < 0.0 < v_max:
         colormap = "RdBu_r"
         limit = max(-v_min, v_max)
+        if color_limit is not None and color_limit < limit:
+            limit = color_limit
+            extend = "both"
         norm = Normalize(vmin=-limit, vmax=limit)
     elif v_max <= 0.0:
         colormap = "Blues_r"
         norm = None
+        if color_limit is not None and -color_limit > v_min:
+            norm = Normalize(vmin=-color_limit, vmax=v_max)
+            extend = "min"
     else:
         colormap = "Reds"
         norm = None
+        if color_limit is not None and color_limit < v_max:
+            norm = Normalize(vmin=v_min, vmax=color_limit)
+            extend = "max"
 
     # Tamaño de figura según la forma del modelo: si es muy alargado (una
     # viga), la barra de colores va abajo; si no, a la derecha.
@@ -183,16 +197,21 @@ def plot_deformed(mesh, elements, u, field="sigma_1", scale=None,
 
     if elongated:
         colorbar_axes = divider.append_axes("bottom", size=0.15, pad=0.6)
-        colorbar = figure.colorbar(image, cax=colorbar_axes, orientation="horizontal")
+        colorbar = figure.colorbar(image, cax=colorbar_axes, orientation="horizontal",
+                                   extend=extend)
     else:
         colorbar_axes = divider.append_axes("right", size="4%", pad=0.15)
-        colorbar = figure.colorbar(image, cax=colorbar_axes)
+        colorbar = figure.colorbar(image, cax=colorbar_axes, extend=extend)
 
     colorbar.set_label(label + " [" + unit + "]")
 
     if title is None:
         title = label
-    axes.set_title(title + "\nDeformada amplificada x" + format(scale, "g"))
+    subtitle = "Deformada amplificada x" + format(scale, "g")
+    if extend != "neither":
+        subtitle = subtitle + " - escala saturada (máx. real " + format(
+            max(abs(v_min), abs(v_max)), ".3g") + " " + unit + ")"
+    axes.set_title(title + "\n" + subtitle)
 
     axes.set_xlabel("x [m]")
     axes.set_ylabel("y [m]")

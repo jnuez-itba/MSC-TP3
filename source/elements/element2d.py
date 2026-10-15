@@ -13,6 +13,7 @@ class Element2D:
         side_nodes                 nodos locales de cada lado: (inicio, fin)
                                    o (inicio, fin, medio)
         natural_nodes              coordenadas naturales (xi, eta) de cada nodo
+        reference                  "triangle" o "square" (elemento de referencia)
         shape_functions(xi, eta)   vector N con las funciones de forma
         shape_derivatives(xi, eta) matriz 2 x n con [dN/dxi; dN/deta]
         quadrature()               puntos y pesos de Gauss
@@ -30,6 +31,7 @@ class Element2D:
     number_of_nodes = 0
     side_nodes = []
     natural_nodes = []
+    reference = ""
 
     def __init__(self, global_id, node_global_ids, mesh, material, thickness):
         if len(node_global_ids) != self.number_of_nodes:
@@ -225,6 +227,41 @@ class Element2D:
             stresses.append(self.stress(u, xi, eta))
 
         return numpy.array(stresses)
+
+    def contains_natural(self, xi, eta, tolerance=1.0e-9):
+        """True si (xi, eta) está dentro del elemento de referencia."""
+        if self.reference == "triangle":
+            return (xi >= -tolerance and eta >= -tolerance
+                    and xi + eta <= 1.0 + tolerance)
+
+        return abs(xi) <= 1.0 + tolerance and abs(eta) <= 1.0 + tolerance
+
+    def natural_coordinates(self, x, y, iterations=20):
+        """Inversa del mapeo isoparamétrico: (xi, eta) del punto (x, y).
+
+        Se resuelve x(xi, eta) = x_objetivo con Newton-Raphson. Devuelve None
+        si no converge. No verifica que el punto esté dentro del elemento
+        (para eso, contains_natural).
+        """
+        if self.reference == "triangle":
+            natural = numpy.array([1.0 / 3.0, 1.0 / 3.0])
+        else:
+            natural = numpy.array([0.0, 0.0])
+
+        target = numpy.array([x, y])
+        size = numpy.ptp(self.coordinates, axis=0).max()
+
+        for k in range(iterations):
+            residual = self.physical_coordinates(natural[0], natural[1]) - target
+
+            if numpy.abs(residual).max() < 1.0e-12 * size:
+                return natural
+
+            # d(x, y)/d(xi, eta) = J^T
+            J = self.jacobian(natural[0], natural[1])
+            natural = natural - numpy.linalg.solve(J.transpose(), residual)
+
+        return None
 
     def physical_coordinates(self, xi, eta):
         """(x, y) del punto de coordenadas naturales (xi, eta)."""

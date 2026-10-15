@@ -80,3 +80,39 @@ def stress_fields(mesh, elements, u):
         "sigma_2": s2,
         "von_mises": von_mises(sxx, syy, txy),
     }
+
+
+def find_element(elements, x, y):
+    """Elemento que contiene el punto (x, y) y sus coordenadas naturales.
+
+    Devuelve (elemento, (xi, eta)) o (None, None) si el punto está fuera de
+    la malla. Si el punto está sobre un lado compartido, devuelve el primer
+    elemento que lo contiene.
+    """
+    for element in elements:
+        x_min, y_min = element.coordinates.min(axis=0)
+        x_max, y_max = element.coordinates.max(axis=0)
+        margin = 1.0e-9 * max(x_max - x_min, y_max - y_min)
+
+        if (x < x_min - margin or x > x_max + margin
+                or y < y_min - margin or y > y_max + margin):
+            continue
+
+        natural = element.natural_coordinates(x, y)
+
+        if natural is not None and element.contains_natural(natural[0], natural[1]):
+            return element, natural
+
+    return None, None
+
+
+def stress_at_point(elements, u, x, y):
+    """Tensión [sxx, syy, txy] en un punto cualquiera de la malla, evaluada
+    con las funciones de forma del elemento que lo contiene (sin promediar).
+    Sirve para comparar mallas distintas en un mismo punto."""
+    element, natural = find_element(elements, x, y)
+
+    if element is None:
+        raise ValueError("Point ({}, {}) is outside the mesh".format(x, y))
+
+    return element.stress(u, natural[0], natural[1])

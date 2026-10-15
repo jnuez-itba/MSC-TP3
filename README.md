@@ -47,6 +47,7 @@ python patch_test.py     # patch test de los 4 elementos (versiones A y B)
 python -m pytest         # todos los tests
 python ejemplo_viga.py   # viga en voladizo: comparación con teoría y deformada
 python generar_malla_presa.py   # malla de la presa (ver abajo)
+python analisis_presa.py        # análisis de la presa (ver abajo)
 python bar.py            # ejemplos de barras de la clase
 python bar_roof.py
 ```
@@ -140,6 +141,34 @@ hidrostática se integre sin error. La malla incluye:
   `crest`.
 
 En `meshes/presa/` están las mallas por defecto para los 4 tipos de elemento.
+
+## Análisis de la presa
+
+```
+python analisis_presa.py                       # base empotrada, malla Q9
+python analisis_presa.py --support sliding     # base deslizante
+python analisis_presa.py --comparar            # estudio completo
+```
+
+1. **Cálculo manual** (`source/dam/stability.py`): peso, empuje, momento
+   estabilizante y desestabilizante respecto del pie, factor de seguridad al
+   vuelco, posición de la resultante (tercio central) y ley trapecial de
+   tensiones en la base. Suelo impermeable: sin subpresión.
+2. **FEM** (`source/dam/model.py`): peso propio + presión hidrostática sobre
+   `upstream_wet`, con la base empotrada (`fixed`: u = v = 0) o deslizante
+   (`sliding`: v = 0 y u = 0 solo en el talón). Se comparan las reacciones
+   y su momento respecto del pie con el cálculo manual.
+3. **Figuras**: tensión principal máxima sobre la deformada y tensiones
+   normales en la base (FEM vs ley trapecial); `.vtu` para ParaView.
+4. **Estudio** (`--comparar`): 4 tipos de elemento, refinamiento de malla,
+   condiciones de borde y tensión plana vs deformación plana.
+
+Las tensiones se comparan en puntos fijos (`stress_at_point`) para que las
+mallas distintas sean comparables. En las esquinas de la base empotrada la
+tensión es singular (crece al refinar), así que la escala de colores se
+satura con los valores a más de 1 m de esas esquinas.
+
+El reporte queda en `results/presa_resultados.txt`.
 
 ## Formato de malla
 

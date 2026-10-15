@@ -1,0 +1,94 @@
+========================================================================
+PRESA DE GRAVEDAD - H = 30 m, base = 18 m, cresta = 3 m, borde libre = 2 m, talud aguas arriba = 0 m
+Hormigón: rho = 2400 kg/m3; agua: rho = 1000 kg/m3; nivel del agua = 28 m
+Suelo impermeable: sin subpresión. Valores por metro de presa.
+========================================================================
+
+1) CÁLCULO MANUAL (cuerpo rígido), momentos respecto del pie (x = 18 m)
+
+  Área de la sección          A  =    315.000 m2
+  Centroide                   xc =      6.143 m
+  Peso                        W  =     7.4164 MN/m
+  Empuje horizontal del agua  F  =     3.8455 MN/m  (a hw/3 = 9.333 m)
+
+  Momento estabilizante   Ms = W (x_pie - xc)  =    87.9368 MN.m/m
+  Momento desestabilizante Md = F hw / 3       =    35.8915 MN.m/m
+  Momento neto            Ms - Md              =    52.0453 MN.m/m
+  Factor de seguridad al vuelco  FS = Ms / Md  =      2.450
+
+  Resultante sobre la base a 7.018 m del pie (tercio central: 6 a 12 m) -> dentro
+  Ley trapecial: compresión en el pie   = 0.6843 MPa
+                 compresión en el talón = 0.1398 MPa
+  Coeficiente de fricción mínimo para no deslizar  mu = F / W = 0.519
+
+2) MODELO FEM
+
+  Malla: meshes/presa/presa_quad9.mesh  (330 elementos QUAD9, 2806 grados de libertad)
+  Base empotrada
+
+  Reacciones en la base            FEM          Manual
+    Horizontal  Rx [MN/m]        -3.8455       -3.8455   (= -F)
+    Vertical    Ry [MN/m]         7.4164        7.4164   (= W)
+    Momento respecto del pie [MN.m/m]
+      de las reacciones         -52.0453      -52.0453   (= -(Ms - Md))
+    Diferencia relativa del momento: 1.7e-16
+
+  Las reacciones equilibran exactamente las cargas: su momento respecto
+  del pie es igual y opuesto al momento neto Ms - Md de las cargas.
+
+  Desplazamiento horizontal máximo de la cresta: 0.675 mm
+  sigma_1 máxima: 1.175 MPa en (0.00, 0.00)
+  sigma_1 en el paramento aguas arriba, 5 m sobre el talón: -0.205 MPa
+  sigma_yy en el centro de la base: -0.512 MPa (ley trapecial: -0.412 MPa)
+
+  La tracción máxima aparece en la esquina del talón. Con la base
+  empotrada esa esquina es un punto singular: el valor crece al refinar
+  la malla (ver --comparar). Lejos de las esquinas, el paramento aguas
+  arriba está comprimido, como predice la ley trapecial (resultante
+  dentro del tercio central).
+
+  Figuras: results/presa_sigma_1_fixed_quad9.png, results/presa_base_fixed_quad9.png
+  ParaView: results/presa_fixed_quad9.vtu   (factor de escala usado: 2000)
+
+========================================================================
+3) ESTUDIO COMPARATIVO
+========================================================================
+
+  a) Tipo de elemento (malla de ~1 m, base empotrada)
+
+    Elem       GdL   ux cresta       s1 máx   s1 paramento    syy centro
+                          [mm]  talón [MPa]    y=5 m [MPa]    base [MPa]
+    TRI3       744      0.6713        0.278         -0.149        -0.510
+    QUAD4      744      0.6729        0.680         -0.161        -0.495
+    TRI6      2806      0.6747        0.644         -0.206        -0.512
+    QUAD9     2806      0.6748        1.175         -0.205        -0.512
+
+  b) Refinamiento de malla (Q9, base empotrada)
+
+    Tamaño       GdL   ux cresta       s1 máx   s1 paramento    syy centro
+    3 m          378      0.6739        0.745         -0.199        -0.511
+    2 m          806      0.6745        0.902         -0.205        -0.513
+    1 m         2806      0.6748        1.175         -0.205        -0.512
+    0.75 m      4698      0.6749        1.295         -0.204        -0.512
+
+    El desplazamiento y las tensiones en puntos fijos lejos de las
+    esquinas convergen.
+    sigma_1 máxima (en el talón) crece al refinar: es una singularidad
+    del empotramiento en la esquina, no un valor físico.
+
+  c) Condición de borde en la base (malla Q9 de ~1 m)
+
+    Base           Rx [MN]   Ry [MN]      M pie   ux cresta   s1 paramento    syy centro
+    empotrada      -3.8455    7.4164   -52.0453      0.6748         -0.205        -0.512
+    deslizante     -3.8455    7.4164   -52.0453      1.6149         -0.232        -0.632
+
+    Base deslizante: el nodo del talón toma Rx = -3.8455 MN, es decir
+    TODO el empuje del agua concentrado en un punto. Sin fricción en la
+    base no hay otra forma de equilibrar el empuje.
+
+  d) Tensión plana vs deformación plana (Q9 ~1 m, base empotrada)
+
+    tensión plana        ux cresta = 0.6748 mm   s1 paramento (y=5 m) = -0.205 MPa
+    deformación plana    ux cresta = 0.6644 mm   s1 paramento (y=5 m) = -0.200 MPa
+
+  Figura: results/presa_base_comparacion.png
