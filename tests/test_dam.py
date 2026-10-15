@@ -79,7 +79,7 @@ def test_fem_reactions_match_hand_calculation():
     # El momento de las reacciones respecto del pie es igual y opuesto al
     # momento neto de las cargas, para cualquier elemento y apoyo
     for element_type in ["TRI3", "QUAD4", "TRI6", "QUAD9"]:
-        for support in ["fixed", "sliding"]:
+        for support in ["fixed", "roller"]:
             check_reactions_match_hand(DamGeometry(), element_type, support)
 
 
@@ -95,9 +95,9 @@ def test_fem_reactions_with_upstream_batter():
         check_reactions_match_hand(geometry, element_type, "fixed")
 
 
-def test_sliding_support_takes_thrust_at_heel():
+def test_roller_support_takes_thrust_at_heel():
     geometry = DamGeometry()
-    result = check_reactions_match_hand(geometry, "QUAD9", "sliding")
+    result = check_reactions_match_hand(geometry, "QUAD9", "roller")
 
     mesh = result["mesh"]
     heel = mesh.node_sets["heel"][0]

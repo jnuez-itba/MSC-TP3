@@ -5,16 +5,24 @@ solve_dam arma y resuelve el problema con:
   - presión hidrostática sobre el SideSet "upstream_wet";
   - condición de borde en la base según 'support':
 
-      "fixed"    empotramiento: u = v = 0 en toda la base.
-                 Fundación rígida (roca mucho más rígida que el hormigón)
-                 y adherencia perfecta: no hay asentamiento ni
-                 deslizamiento.
+      "fixed"   empotramiento: u = v = 0 en toda la base.
+                Fundación rígida (roca mucho más rígida que el hormigón) con
+                adherencia perfecta: equivale a fricción infinita. No hay
+                asentamiento, deslizamiento ni despegue.
 
-      "sliding"  apoyo deslizante: v = 0 en toda la base, u = 0 solo en el
-                 talón (para impedir el movimiento de cuerpo rígido).
-                 Fundación rígida pero sin fricción: la base puede
-                 expandirse libremente en x. Todo el empuje horizontal lo
-                 toma un único nodo.
+      "roller"  apoyo deslizante sin fricción (rodillo): v = 0 en toda la
+                base, u = 0 solo en el talón (para impedir el movimiento de
+                cuerpo rígido). Fundación rígida con fricción nula. Todo el
+                empuje horizontal lo toma un único nodo.
+
+      "robin"   condición de Robin: resortes distribuidos en la base con
+                rigidez normal k_normal y tangencial k_tangential [N/m3].
+                Fundación elástica (Winkler). Es un caso intermedio entre
+                los dos anteriores.
+
+  La fricción de Coulomb (adherencia hasta |t| = mu sigma, después
+  deslizamiento) es no lineal y queda fuera de este modelo lineal: "fixed" y
+  "roller" son los dos casos límite.
 """
 
 import numpy
@@ -29,19 +37,26 @@ from source.systems.loads import add_side_pressure
 from source.systems.loads import hydrostatic_pressure
 from source.systems.reactions import compute_reactions
 from source.systems.reactions import node_set_reaction_resultant
+from source.systems.robin import add_robin_side
 from source.solvers.linear import solve
 
 
-SUPPORTS = ["fixed", "sliding"]
+SUPPORTS = ["fixed", "roller", "robin"]
 
 
 def solve_dam(mesh, water_level, support="fixed", water_density=1000.0,
-              gravity=GRAVITY):
+              gravity=GRAVITY, k_normal=None, k_tangential=None):
     """Resuelve la presa. Devuelve un diccionario con la malla, los
     elementos, los desplazamientos u, las reacciones R y su resultante
-    respecto del pie (Fx, Fy, Mz; Mz positivo antihorario)."""
+    respecto del pie (Fx, Fy, Mz; Mz positivo antihorario).
+
+    Con support="robin" hay que dar k_normal y k_tangential.
+    """
     if support not in SUPPORTS:
         raise ValueError("Unknown support: " + support)
+
+    if support == "robin" and (k_normal is None or k_tangential is None):
+        raise ValueError("Robin support needs k_normal and k_tangential")
 
     mesh.dofs_per_node = 2
     elements = create_elements(mesh)
@@ -55,15 +70,21 @@ def solve_dam(mesh, water_level, support="fixed", water_density=1000.0,
     add_side_pressure(f, mesh, elements, "upstream_wet",
                       hydrostatic_pressure(water_level, water_density, gravity))
 
+    # K y f de la estructura sola, antes de los apoyos: con ellos las
+    # reacciones son R = K u - f (en Robin, la fuerza de los resortes)
     K_original = K.values.copy()
     f_original = f.copy()
 
     if support == "fixed":
         fix_node_set(K, f, mesh, "base", (0, 1))
-    else:
+
+    elif support == "roller":
         fix_node_set(K, f, mesh, "base", (1,))
         heel = mesh.node_sets["heel"][0]
         apply_dirichlet_bc(K, f, mesh.node_global_dofs(heel)[0], 0.0)
+
+    else:
+        add_robin_side(K, mesh, elements, "base", k_normal, k_tangential)
 
     u = solve(K, f)
 

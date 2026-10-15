@@ -158,20 +158,21 @@ def plot_deformed(mesh, elements, u, field="sigma_1", scale=None,
     if v_min < 0.0 < v_max:
         colormap = "RdBu_r"
         limit = max(-v_min, v_max)
-        if color_limit is not None and color_limit < limit:
+        # solo se satura si el pico es claramente mayor (más de 10 %)
+        if color_limit is not None and color_limit < 0.9 * limit:
             limit = color_limit
             extend = "both"
         norm = Normalize(vmin=-limit, vmax=limit)
     elif v_max <= 0.0:
         colormap = "Blues_r"
         norm = None
-        if color_limit is not None and -color_limit > v_min:
+        if color_limit is not None and -color_limit > 0.9 * v_min:
             norm = Normalize(vmin=-color_limit, vmax=v_max)
             extend = "min"
     else:
         colormap = "Reds"
         norm = None
-        if color_limit is not None and color_limit < v_max:
+        if color_limit is not None and color_limit < 0.9 * v_max:
             norm = Normalize(vmin=v_min, vmax=color_limit)
             extend = "max"
 
@@ -209,8 +210,8 @@ def plot_deformed(mesh, elements, u, field="sigma_1", scale=None,
         title = label
     subtitle = "Deformada amplificada x" + format(scale, "g")
     if extend != "neither":
-        subtitle = subtitle + " - escala saturada (máx. real " + format(
-            max(abs(v_min), abs(v_max)), ".3g") + " " + unit + ")"
+        subtitle = (subtitle + "\nescala saturada; valores reales de "
+                    + format(v_min, ".3g") + " a " + format(v_max, ".3g") + " " + unit)
     axes.set_title(title + "\n" + subtitle)
 
     axes.set_xlabel("x [m]")

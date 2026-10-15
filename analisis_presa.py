@@ -12,7 +12,9 @@
 
 Uso:
     python analisis_presa.py                         # base empotrada, Q9
-    python analisis_presa.py --support sliding       # base deslizante
+    python analisis_presa.py --support roller        # rodillo (sin fricción)
+    python analisis_presa.py --support robin         # Robin: fundación elástica
+    python analisis_presa.py --support robin --e-fundacion 5e9
     python analisis_presa.py --mesh meshes/presa/presa_tri6.mesh
     python analisis_presa.py --scale 5000 --field von_mises
     python analisis_presa.py --comparar --no-show    # estudio completo
@@ -35,6 +37,7 @@ from source.dam.stability import stability
 from source.dam.model import solve_dam
 from source.dam.model import base_nodes_sorted
 from source.dam.plots import plot_base_pressure
+from source.systems.robin import winkler_stiffness
 from source.output.postprocess import stress_fields
 from source.output.postprocess import nodal_displacements
 from source.output.postprocess import stress_at_point
@@ -46,8 +49,13 @@ from source.output.plot import FIELDS
 
 parser = argparse.ArgumentParser(description="Análisis de la presa de gravedad")
 parser.add_argument("--mesh", default="meshes/presa/presa_quad9.mesh")
-parser.add_argument("--support", default="fixed", choices=["fixed", "sliding"],
-                    help="fixed = empotrada, sliding = deslizante")
+parser.add_argument("--support", default="fixed", choices=["fixed", "roller", "robin"],
+                    help="fixed = empotrada, roller = rodillo sin fricción, "
+                         "robin = resortes (fundación elástica)")
+parser.add_argument("--e-fundacion", type=float, default=20.0e9,
+                    help="módulo de la fundación para Robin [Pa] (roca sana ~20 GPa)")
+parser.add_argument("--nu-fundacion", type=float, default=0.25,
+                    help="Poisson de la fundación para Robin")
 parser.add_argument("--field", default="sigma_1", choices=list(FIELDS.keys()))
 parser.add_argument("--scale", type=float, default=None)
 parser.add_argument("--no-saturate", action="store_true",
@@ -59,7 +67,11 @@ args = parser.parse_args()
 
 SHOW = not args.no_show
 
-SUPPORT_NAMES = {"fixed": "empotrada", "sliding": "deslizante"}
+SUPPORT_NAMES = {
+    "fixed": "empotrada",
+    "roller": "rodillo (sin fricción)",
+    "robin": "Robin (fundación elástica)",
+}
 
 os.makedirs("results", exist_ok=True)
 report_file = open("results/presa_resultados.txt", "w", encoding="utf-8")
@@ -77,6 +89,15 @@ def mega(value):
 geometry = DamGeometry()
 hand = stability(geometry)
 x_toe = geometry.toe()[0]
+
+# Rigideces de Winkler para la condición de Robin: k = E / B, G / B
+K_NORMAL, K_TANGENTIAL = winkler_stiffness(args.e_fundacion, args.nu_fundacion,
+                                           geometry.base)
+
+
+def solve(mesh, support):
+    return solve_dam(mesh, geometry.water_level(), support,
+                     k_normal=K_NORMAL, k_tangential=K_TANGENTIAL)
 
 
 # ======================================================================
@@ -174,7 +195,7 @@ def base_pressure_curve(result, fields):
 
 
 mesh = load_mesh(args.mesh)
-result = solve_dam(mesh, geometry.water_level(), args.support)
+result = solve(mesh, args.support)
 summary = fem_summary(result)
 
 report()
@@ -183,6 +204,10 @@ report()
 report("  Malla: {}  ({} elementos {}, {} grados de libertad)".format(
     args.mesh, mesh.number_of_elements(), mesh.element_types[0], summary["dofs"]))
 report("  Base {}".format(SUPPORT_NAMES[args.support]))
+if args.support == "robin":
+    report("    E fundación = {:g} GPa, nu = {:g}  ->  k_n = E/B = {:.3f} GPa/m,"
+           " k_t = G/B = {:.3f} GPa/m".format(args.e_fundacion * 1.0e-9, args.nu_fundacion,
+                                              K_NORMAL * 1.0e-9, K_TANGENTIAL * 1.0e-9))
 report()
 report("  Reacciones en la base            FEM          Manual")
 report("    Horizontal  Rx [MN/m]   {:12.4f}  {:12.4f}   (= -F)".format(
@@ -210,11 +235,21 @@ report("  sigma_yy en el centro de la base: {:.3f} MPa (ley trapecial: {:.3f} MP
     mega(summary["syy_base"]),
     -mega((hand["base_pressure_heel"] + hand["base_pressure_toe"]) / 2.0)))
 report()
-report("  La tracción máxima aparece en la esquina del talón. Con la base")
-report("  empotrada esa esquina es un punto singular: el valor crece al refinar")
-report("  la malla (ver --comparar). Lejos de las esquinas, el paramento aguas")
-report("  arriba está comprimido, como predice la ley trapecial (resultante")
-report("  dentro del tercio central).")
+if args.support == "fixed":
+    report("  La tracción máxima aparece en la esquina del talón. Con la base")
+    report("  empotrada esa esquina es un punto singular: el valor crece al refinar")
+    report("  la malla (ver --comparar). Lejos de las esquinas, el paramento aguas")
+    report("  arriba está comprimido, como predice la ley trapecial (resultante")
+    report("  dentro del tercio central).")
+elif args.support == "roller":
+    report("  Rodillo sin fricción: el único nodo con u = 0 (talón) toma todo el")
+    report("  empuje del agua como carga puntual, de ahí el pico de tensión en el")
+    report("  talón. Es un caso límite (fricción nula), no el comportamiento real.")
+else:
+    report("  Robin: la fundación se deforma con la presa. No hay esquina rígida,")
+    report("  así que desaparece la singularidad del talón; la tensión máxima es")
+    report("  chica y la presión en la base se parece a la ley trapecial. La cresta")
+    report("  se desplaza más porque se suma la rotación sobre la fundación.")
 
 
 # ======================================================================
@@ -309,28 +344,39 @@ if args.comparar:
     report()
     report("  c) Condición de borde en la base (malla Q9 de ~1 m)")
     report()
-    report("    {:<12}{:>10}{:>10}{:>11}{:>12}{:>15}{:>14}".format(
-        "Base", "Rx [MN]", "Ry [MN]", "M pie", "ux cresta", "s1 paramento", "syy centro"))
+    report("    {:<28}{:>9}{:>9}{:>10}{:>11}{:>9}{:>11}{:>11}".format(
+        "Base", "Rx [MN]", "Ry [MN]", "M pie", "ux cresta", "s1 máx", "s1 param.", "syy centro"))
 
     curves = []
-    for support in ["fixed", "sliding"]:
+    for support in ["fixed", "roller", "robin"]:
         m = load_mesh(args.mesh)
-        r = solve_dam(m, geometry.water_level(), support)
+        r = solve(m, support)
         s = fem_summary(r)
-        report("    {:<12}{:>10.4f}{:>10.4f}{:>11.4f}{:>12.4f}{:>15.3f}{:>14.3f}".format(
+        report("    {:<28}{:>9.4f}{:>9.4f}{:>10.3f}{:>11.4f}{:>9.3f}{:>11.3f}{:>11.3f}".format(
             SUPPORT_NAMES[support], mega(r["reaction_x"]), mega(r["reaction_y"]),
-            mega(r["reaction_moment_toe"]), s["ux_crest"] * 1.0e3, mega(s["s1_face"]),
-            mega(s["syy_base"])))
+            mega(r["reaction_moment_toe"]), s["ux_crest"] * 1.0e3, mega(s["s1_max"]),
+            mega(s["s1_face"]), mega(s["syy_base"])))
         x, q = base_pressure_curve(r, s["fields"])
         curves.append(("FEM, base " + SUPPORT_NAMES[support], x, q))
 
-        if support == "sliding":
+        if support == "roller":
             heel = m.node_sets["heel"][0]
-            R_heel = r["reactions"][m.node_global_dofs(heel)[0]]
-            report()
-            report("    Base deslizante: el nodo del talón toma Rx = {:.4f} MN, es decir".format(mega(R_heel)))
-            report("    TODO el empuje del agua concentrado en un punto. Sin fricción en la")
-            report("    base no hay otra forma de equilibrar el empuje.")
+            roller_heel_reaction = r["reactions"][m.node_global_dofs(heel)[0]]
+
+    report()
+    report("    Empotrada = fricción infinita; rodillo = fricción nula: son los dos")
+    report("    casos límite de un modelo lineal (la fricción de Coulomb es no lineal).")
+    report("    Rodillo: el nodo del talón toma Rx = {:.4f} MN, TODO el empuje del agua".format(
+        mega(roller_heel_reaction)))
+    report("    en un punto. Sin fricción no hay otra forma de equilibrar el empuje.")
+    report("    Como la fricción necesaria (mu = {:.2f}) es menor que la disponible para".format(
+        hand["required_friction"]))
+    report("    hormigón sobre roca (~0.6-0.8), la presa no desliza y el caso")
+    report("    empotrado es el más representativo.")
+    report("    Robin (E fundación = {:g} GPa): la fundación se deforma, la cresta se".format(
+        args.e_fundacion * 1.0e-9))
+    report("    mueve más, desaparece la singularidad del talón y la presión en la")
+    report("    base se acerca a la ley trapecial.")
 
     plot_base_pressure(geometry, hand, curves,
                        filename="results/presa_base_comparacion.png",

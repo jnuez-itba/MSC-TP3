@@ -341,6 +341,49 @@ class Element2D:
 
         return fe
 
+    def side_spring_matrix(self, side, k_normal, k_tangential):
+        """Matriz de rigidez de resortes distribuidos sobre un lado (condición
+        de borde de Robin: tracción t = -S u).
+
+            Ks = integral_lado( N^T S N espesor ds )
+            S  = k_normal n n^T + k_tangential s s^T
+
+        n es la normal saliente y s la tangente unitaria del lado. k_normal y
+        k_tangential en N/m3 (presión por unidad de desplazamiento).
+        Devuelve una matriz del tamaño del elemento (2n x 2n), con valores
+        solo en los grados de libertad de los nodos del lado.
+        """
+        side_nodes = list(self.side_nodes[side])
+        side_coordinates = self.coordinates[side_nodes]
+
+        n_dofs = 2 * self.number_of_nodes
+        Ks = numpy.zeros((n_dofs, n_dofs))
+        t = self.thickness
+
+        points, weights = gauss_legendre_1d(3)
+
+        for p in range(len(points)):
+            N, dN = side_shape_functions(len(side_nodes), points[p])
+
+            dx, dy = dN @ side_coordinates
+            ds = math.sqrt(dx * dx + dy * dy)
+
+            tangent = numpy.array([dx / ds, dy / ds])
+            normal = numpy.array([dy / ds, -dx / ds])
+
+            S = (k_normal * numpy.outer(normal, normal)
+                 + k_tangential * numpy.outer(tangent, tangent))
+
+            for a in range(len(side_nodes)):
+                i = side_nodes[a]
+                for b in range(len(side_nodes)):
+                    j = side_nodes[b]
+                    block = N[a] * N[b] * S * t * ds * weights[p]
+                    Ks[2 * i:2 * i + 2, 2 * j:2 * j + 2] = (
+                        Ks[2 * i:2 * i + 2, 2 * j:2 * j + 2] + block)
+
+        return Ks
+
     def side_coordinates(self, side):
         return self.coordinates[list(self.side_nodes[side])]
 

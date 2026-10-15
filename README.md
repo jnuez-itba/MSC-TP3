@@ -147,7 +147,8 @@ En `meshes/presa/` están las mallas por defecto para los 4 tipos de elemento.
 
 ```
 python analisis_presa.py                       # base empotrada, malla Q9
-python analisis_presa.py --support sliding     # base deslizante
+python analisis_presa.py --support roller      # rodillo (sin fricción)
+python analisis_presa.py --support robin       # Robin: fundación elástica
 python analisis_presa.py --comparar            # estudio completo
 ```
 
@@ -156,9 +157,16 @@ python analisis_presa.py --comparar            # estudio completo
    vuelco, posición de la resultante (tercio central) y ley trapecial de
    tensiones en la base. Suelo impermeable: sin subpresión.
 2. **FEM** (`source/dam/model.py`): peso propio + presión hidrostática sobre
-   `upstream_wet`, con la base empotrada (`fixed`: u = v = 0) o deslizante
-   (`sliding`: v = 0 y u = 0 solo en el talón). Se comparan las reacciones
-   y su momento respecto del pie con el cálculo manual.
+   `upstream_wet`, con una de tres condiciones de borde en la base:
+   - `fixed`: empotrada, u = v = 0 (fundación rígida, fricción infinita);
+   - `roller`: rodillo sin fricción, v = 0 y u = 0 solo en el talón;
+   - `robin`: resortes distribuidos (condición de Robin, fundación elástica
+     de Winkler), con k_n = E_f / B y k_t = G_f / B. Por defecto
+     E_f = 20 GPa (`--e-fundacion`).
+
+   La fricción de Coulomb es no lineal: `fixed` y `roller` son los dos casos
+   límite del modelo lineal. Se comparan las reacciones y su momento
+   respecto del pie con el cálculo manual.
 3. **Figuras**: tensión principal máxima sobre la deformada y tensiones
    normales en la base (FEM vs ley trapecial); `.vtu` para ParaView.
 4. **Estudio** (`--comparar`): 4 tipos de elemento, refinamiento de malla,
