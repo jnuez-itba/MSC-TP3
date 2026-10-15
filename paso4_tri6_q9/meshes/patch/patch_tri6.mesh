@@ -1,0 +1,45 @@
+# Patch test MacNeal-Harder: rectangulo 0.24 x 0.12
+# Mismos vertices que el parche lineal, cada cuadrilatero dividido en 2 triangulos de 6 nodos.
+# Nodos 1-8: vertices. Nodos 9 en adelante: puntos medios de los lados.
+
+# n_nodes n_elements dim
+25 10 2
+
+# node_number x y
+1 0.0000 0.0000
+2 0.2400 0.0000
+3 0.2400 0.1200
+4 0.0000 0.1200
+5 0.0400 0.0200
+6 0.1800 0.0300
+7 0.1600 0.0800
+8 0.0800 0.0800
+9 0.1200 0.0000
+10 0.2100 0.0150
+11 0.0900 0.0150
+12 0.1100 0.0250
+13 0.0200 0.0100
+14 0.2400 0.0600
+15 0.2000 0.1000
+16 0.2000 0.0400
+17 0.1700 0.0550
+18 0.1200 0.1200
+19 0.0400 0.1000
+20 0.1600 0.1000
+21 0.1200 0.0800
+22 0.0000 0.0600
+23 0.0200 0.0700
+24 0.0600 0.0500
+25 0.1000 0.0500
+
+# element_number element_type connectivity (vertices antihorarios, lados)
+1 TRI6 1 2 6 9 10 11
+2 TRI6 1 6 5 11 12 13
+3 TRI6 2 3 7 14 15 16
+4 TRI6 2 7 6 16 17 10
+5 TRI6 3 4 8 18 19 20
+6 TRI6 3 8 7 20 21 15
+7 TRI6 4 1 5 22 13 23
+8 TRI6 4 5 8 23 24 19
+9 TRI6 5 6 7 12 17 25
+10 TRI6 5 7 8 25 21 24

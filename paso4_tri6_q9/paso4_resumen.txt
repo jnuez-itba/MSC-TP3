@@ -1,0 +1,80 @@
+PASO 4 - Elementos cuadráticos Tri6 y Q9
+========================================
+
+Commit: "Agrega elementos cuadráticos Tri6 y Q9 con su patch test"
+
+Objetivo
+--------
+El enunciado pide elementos triangulares y cuadrangulares, lineales y
+cuadráticos. Los lineales (Tri3, Quad4) ya están. En este paso se suman los
+cuadráticos: Tri6 y Q9 (cuadrilátero lagrangiano de 9 nodos, el que usa la
+materia).
+
+Gracias a la clase base Element2D del paso 2, cada elemento nuevo solo tiene
+que definir sus funciones de forma, sus derivadas y su regla de Gauss. El
+jacobiano, la matriz B, la rigidez y las tensiones salen de la clase base sin
+cambios.
+
+
+Qué se hizo
+-----------
+
+1) source/elements/tri6.py  (nuevo)
+   Triángulo de 6 nodos: 3 vértices y 3 nodos en el medio de los lados.
+   Con L1 = 1 - xi - eta, L2 = xi, L3 = eta:
+     vértices:  Ni = Li (2 Li - 1)
+     lados:     N4 = 4 L1 L2,  N5 = 4 L2 L3,  N6 = 4 L3 L1
+   Usa 3 puntos de Gauss.
+
+2) source/elements/quad9.py  (nuevo)
+   Cuadrilátero de 9 nodos: 4 vértices, 4 nodos de lado y 1 central.
+   Cada función de forma es producto de dos polinomios de Lagrange
+   cuadráticos 1D: Ni = l_a(xi) * l_b(eta).
+   Usa 3x3 puntos de Gauss.
+
+   En ambos elementos el orden de los nodos es primero los vértices
+   (antihorario), después los lados y por último el centro. Es el mismo orden
+   que usa ParaView (VTK), lo que va a simplificar la exportación en el paso 7.
+
+3) source/elements/factory.py  (modificado)
+   Se agregan "TRI6" y "QUAD9" al diccionario de tipos de elemento.
+
+4) meshes/patch/patch_tri6.mesh y patch_quad9.mesh  (nuevos)
+   El mismo parche de MacNeal-Harder del paso 3, con nodos agregados en el
+   medio de cada lado (y en el centro para el Q9). Tienen 17 nodos libres
+   interiores, contra 4 en los lineales.
+
+5) patch_test.py y tests/test_patch.py  (modificados)
+   Se suman las dos mallas nuevas.
+
+6) tests/test_elements.py  (modificado)
+   Todos los tests de elementos ahora corren para los 4 tipos. Además se
+   agregan dos tests:
+   - las derivadas de las funciones de forma coinciden con diferencias
+     finitas;
+   - Tri6 y Q9 reproducen exactamente un campo de desplazamientos
+     cuadrático (deformación lineal), cosa que los elementos lineales no
+     pueden hacer.
+
+
+Resultado
+---------
+    Tipo     Elementos  Interiores     Error u (rel) Error sigma (rel)
+    TRI3            10           4          3.68e-16          1.49e-14   PASA
+    QUAD4            5           4          3.68e-16          1.13e-14   PASA
+    TRI6            10          17          1.10e-15          8.58e-14   PASA
+    QUAD9            5          17          9.19e-16          3.37e-14   PASA
+
+Los cuatro elementos pasan el patch test. Tests: 21 de 21 pasan.
+
+Con esto quedan cumplidos dos requisitos del enunciado: soportar elementos
+triangulares y cuadrangulares lineales y cuadráticos, y pasar el patch test
+para cada tipo de elemento.
+
+
+Cómo se usa en el paso siguiente
+--------------------------------
+En el paso 5 se diseña el formato de malla nuevo, en el que el archivo
+indica el tipo de elemento, el orden de interpolación y el material, como
+pide el enunciado. También se agregan conjuntos de nodos y bordes con nombre
+para aplicar apoyos y cargas.
