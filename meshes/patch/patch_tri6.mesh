@@ -61,4 +61,17 @@ $NodeSets
 # nombre  cantidad  nodos
 boundary 8
 1 2 3 4 9 14 18 22
+# apoyos mínimos para el patch test por fuerzas
+pin 1 1
+roller 1 2
 $EndNodeSets
+
+$SideSets
+# lados del contorno: para el patch test por fuerzas
+# nombre  cantidad  (elemento lado) ...
+boundary_sides 4
+1 1
+3 1
+5 1
+7 1
+$EndSideSets

@@ -27,6 +27,9 @@ class Quad4(Element2D):
 
     number_of_nodes = 4
 
+    # lados: 1-2, 2-3, 3-4, 4-1
+    side_nodes = [(0, 1), (1, 2), (2, 3), (3, 0)]
+
     # coordenadas naturales de los nodos
     xi_nodes = [-1.0, 1.0, 1.0, -1.0]
     eta_nodes = [-1.0, -1.0, 1.0, 1.0]

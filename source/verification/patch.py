@@ -1,4 +1,6 @@
-"""Patch test por desplazamientos impuestos.
+"""Patch test.
+
+Versión A, por desplazamientos impuestos (run_patch_test):
 
 1. Se arma un parche de elementos distorsionados con nodos interiores.
 2. En los nodos del borde (NodeSet "boundary" del archivo de malla) se impone
@@ -10,6 +12,15 @@
      - los nodos interiores reproducen el campo lineal exacto, y
      - la tensión en todos los puntos de Gauss es la constante D * epsilon.
 
+Versión B, por fuerzas (run_patch_test_forces):
+
+1. Mismo parche, pero solo con los apoyos mínimos para evitar el movimiento de
+   cuerpo rígido (NodeSets "pin" y "roller").
+2. Sobre el contorno (SideSet "boundary_sides") se aplica la tracción que
+   corresponde al estado de tensión constante: t = sigma . n
+3. Se resuelve y se verifica que la tensión en todos los puntos de Gauss sea
+   la constante. Prueba además la integración de cargas sobre los lados.
+
 El material, el espesor y el tipo de elemento se leen del archivo de malla.
 """
 
@@ -19,6 +30,8 @@ from source.mesh.mesh import Mesh
 from source.elements.factory import create_elements
 from source.systems.dense_matrix import DenseMatrix
 from source.systems.boundary_conditions import apply_dirichlet_bc
+from source.systems.boundary_conditions import fix_node_set
+from source.systems.loads import add_side_traction
 from source.solvers.linear import solve
 
 
@@ -108,4 +121,57 @@ def run_patch_test(mesh_filename):
         "displacement_error": displacement_error / displacement_scale,
         "stress_error": stress_error / stress_scale,
         "stress_exact": elements[0].material.D @ exact_strain(),
+    }
+
+
+def run_patch_test_forces(mesh_filename):
+    """Patch test por fuerzas. Devuelve un diccionario con el error en tensiones."""
+    mesh = Mesh()
+    mesh.read(mesh_filename)
+    mesh.dofs_per_node = 2
+
+    for name in ["pin", "roller"]:
+        if name not in mesh.node_sets:
+            raise ValueError("Patch mesh needs a NodeSet called '" + name + "'")
+
+    if "boundary_sides" not in mesh.side_sets:
+        raise ValueError("Patch mesh needs a SideSet called 'boundary_sides'")
+
+    elements = create_elements(mesh)
+
+    # Tensión constante exacta (un solo material en el parche)
+    D = elements[0].material.D
+    sxx, syy, txy = D @ exact_strain()
+
+    def traction(x, y, normal):
+        # t = sigma . n
+        tx = sxx * normal[0] + txy * normal[1]
+        ty = txy * normal[0] + syy * normal[1]
+        return tx, ty
+
+    number_of_dofs = mesh.number_of_dofs()
+    K = DenseMatrix(number_of_dofs)
+
+    for element in elements:
+        K.scatter_local_to_global(element)
+
+    f = numpy.zeros(number_of_dofs)
+    add_side_traction(f, mesh, elements, "boundary_sides", traction)
+
+    # Apoyos mínimos: un nodo fijo en x e y, otro fijo en y
+    fix_node_set(K, f, mesh, "pin", (0, 1))
+    fix_node_set(K, f, mesh, "roller", (1,))
+
+    u = solve(K, f)
+
+    stress_exact = numpy.array([sxx, syy, txy])
+    stress_error = 0.0
+
+    for element in elements:
+        for stress in element.stress_at_gauss_points(u):
+            stress_error = max(stress_error, numpy.abs(stress - stress_exact).max())
+
+    return {
+        "elements": len(elements),
+        "stress_error": stress_error / numpy.abs(stress_exact).max(),
     }

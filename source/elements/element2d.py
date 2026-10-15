@@ -1,4 +1,8 @@
+import math
+
 import numpy
+
+from source.quadrature.gauss import gauss_legendre_1d
 
 
 class Element2D:
@@ -6,6 +10,8 @@ class Element2D:
 
     Cada subclase define:
         number_of_nodes            cantidad de nodos del elemento
+        side_nodes                 nodos locales de cada lado: (inicio, fin)
+                                   o (inicio, fin, medio)
         shape_functions(xi, eta)   vector N con las funciones de forma
         shape_derivatives(xi, eta) matriz 2 x n con [dN/dxi; dN/deta]
         quadrature()               puntos y pesos de Gauss
@@ -21,6 +27,7 @@ class Element2D:
 
     dofs_per_node = 2
     number_of_nodes = 0
+    side_nodes = []
 
     def __init__(self, global_id, node_global_ids, mesh, material, thickness):
         if len(node_global_ids) != self.number_of_nodes:
@@ -207,3 +214,100 @@ class Element2D:
         N = self.shape_functions(xi, eta)
 
         return N @ self.coordinates
+
+    # ------------------------------------------------------------------
+    # Cargas
+    # ------------------------------------------------------------------
+
+    def body_force_vector(self, bx, by):
+        """Fuerzas nodales equivalentes a una fuerza de volumen constante
+        b = (bx, by) [N/m3]:
+
+            fe = integral( N^T b t dA )
+
+        Para el peso propio: b = (0, -rho g).
+        """
+        fe = numpy.zeros(2 * self.number_of_nodes)
+        t = self.thickness
+
+        points, weights = self.quadrature()
+
+        for p in range(len(points)):
+            xi = points[p][0]
+            eta = points[p][1]
+
+            N = self.shape_functions(xi, eta)
+            detJ = numpy.linalg.det(self.jacobian(xi, eta))
+
+            for i in range(self.number_of_nodes):
+                fe[2 * i] = fe[2 * i] + N[i] * bx * t * detJ * weights[p]
+                fe[2 * i + 1] = fe[2 * i + 1] + N[i] * by * t * detJ * weights[p]
+
+        return fe
+
+    def side_load_vector(self, side, traction_function):
+        """Fuerzas nodales equivalentes a una tracción sobre un lado:
+
+            fe = integral_lado( N^T t(x, y) espesor ds )
+
+        side               número de lado (desde 0). El lado k va del vértice
+                           k al vértice k + 1 (ver side_nodes de cada elemento).
+        traction_function  función (x, y, normal) -> (tx, ty) [N/m2], donde
+                           normal es la normal unitaria saliente del lado.
+
+        Se integra con 3 puntos de Gauss sobre el lado: es exacto para
+        presiones que varían linealmente (como la hidrostática), tanto en
+        lados lineales como cuadráticos.
+        """
+        side_nodes = list(self.side_nodes[side])
+        side_coordinates = self.coordinates[side_nodes]
+
+        fe = numpy.zeros(2 * self.number_of_nodes)
+        t = self.thickness
+
+        points, weights = gauss_legendre_1d(3)
+
+        for p in range(len(points)):
+            N, dN = side_shape_functions(len(side_nodes), points[p])
+
+            x, y = N @ side_coordinates
+            dx, dy = dN @ side_coordinates
+            ds = math.sqrt(dx * dx + dy * dy)
+
+            # Con los vértices en sentido antihorario, la normal saliente
+            # es la tangente rotada 90 grados en sentido horario.
+            normal = numpy.array([dy / ds, -dx / ds])
+
+            tx, ty = traction_function(x, y, normal)
+
+            for a in range(len(side_nodes)):
+                i = side_nodes[a]
+                fe[2 * i] = fe[2 * i] + N[a] * tx * t * ds * weights[p]
+                fe[2 * i + 1] = fe[2 * i + 1] + N[a] * ty * t * ds * weights[p]
+
+        return fe
+
+    def side_coordinates(self, side):
+        return self.coordinates[list(self.side_nodes[side])]
+
+
+def side_shape_functions(n_nodes, s):
+    """Funciones de forma 1D sobre un lado, en s en [-1, 1].
+
+    2 nodos (lado lineal):     [inicio, fin]
+    3 nodos (lado cuadrático): [inicio, fin, medio]
+
+    Devuelve (N, dN/ds).
+    """
+    if n_nodes == 2:
+        N = numpy.array([(1.0 - s) / 2.0, (1.0 + s) / 2.0])
+        dN = numpy.array([-0.5, 0.5])
+
+    elif n_nodes == 3:
+        N = numpy.array([s * (s - 1.0) / 2.0, s * (s + 1.0) / 2.0, 1.0 - s * s])
+        dN = numpy.array([s - 0.5, s + 0.5, -2.0 * s])
+
+    else:
+        raise ValueError("Unsupported side with " + str(n_nodes) + " nodes")
+
+    return N, dN

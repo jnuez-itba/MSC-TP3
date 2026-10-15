@@ -28,6 +28,9 @@ class Tri3(Element2D):
 
     number_of_nodes = 3
 
+    # lados: 1-2, 2-3, 3-1
+    side_nodes = [(0, 1), (1, 2), (2, 0)]
+
     def shape_functions(self, xi, eta):
         return numpy.array([
             1.0 - xi - eta,

@@ -29,7 +29,7 @@ source/
   systems/       matriz global y condiciones de borde
   solvers/       resolución del sistema lineal
   output/        exportación de resultados (ParaView)
-  verification/  patch test
+  verification/  patch test (por desplazamientos y por fuerzas)
 meshes/          archivos de malla
 tests/           tests automáticos (pytest)
 ```
@@ -43,11 +43,52 @@ pip install -r requirements.txt
 ## Uso
 
 ```
-python patch_test.py     # patch test de los 4 elementos
+python patch_test.py     # patch test de los 4 elementos (versiones A y B)
 pytest                   # todos los tests
 python bar.py            # ejemplos de barras de la clase
 python bar_roof.py
 ```
+
+## Cargas, apoyos y reacciones
+
+Flujo típico de un análisis (ver `source/systems/`):
+
+```python
+mesh = Mesh()
+mesh.read("meshes/modelo.mesh")
+mesh.dofs_per_node = 2
+elements = create_elements(mesh)
+
+K = DenseMatrix(mesh.number_of_dofs())
+for element in elements:
+    K.scatter_local_to_global(element)
+
+f = numpy.zeros(mesh.number_of_dofs())
+add_self_weight(f, elements)                          # b = (0, -rho g)
+add_side_pressure(f, mesh, elements, "aguas_arriba",  # p = rho_w g (nivel - y)
+                  hydrostatic_pressure(28.0))
+
+K_original = K.values.copy()                          # para las reacciones
+f_original = f.copy()
+
+fix_node_set(K, f, mesh, "base", (0, 1))              # u = v = 0
+
+u = solve(K, f)
+R = compute_reactions(K_original, f_original, u)      # R = K u - f
+Fx, Fy, Mz = node_set_reaction_resultant(mesh, R, "base", (18.0, 0.0))
+```
+
+- `add_self_weight`: peso propio con la densidad de cada material.
+- `add_side_traction` / `add_side_pressure`: tracción o presión sobre un
+  SideSet. La presión es positiva en compresión.
+- `fix_node_set`: componentes `(0, 1)` empotramiento, `(1,)` solo v, `(0,)`
+  solo u.
+- `node_set_reaction_resultant`: fuerza y momento de las reacciones respecto
+  de un punto (positivo antihorario).
+
+Las cargas sobre lados se integran con 3 puntos de Gauss: es exacto para una
+presión lineal. Si la presión tiene un quiebre (nivel del agua), conviene que
+la malla tenga un nodo en ese nivel.
 
 ## Formato de malla
 
