@@ -5,10 +5,10 @@ superior, en estado plano de deformación (el material sale de la malla). Compar
 deformada.
 
 Uso:
-    python ejemplo_viga.py                        # sigma_1, escala automática
-    python ejemplo_viga.py --scale 50             # factor de escala 50
-    python ejemplo_viga.py --field von_mises      # otro campo
-    python ejemplo_viga.py --no-show              # solo guarda los archivos
+    python scripts/ejemplo_viga.py                        # sigma_1, escala automática
+    python scripts/ejemplo_viga.py --scale 50             # factor de escala 50
+    python scripts/ejemplo_viga.py --field von_mises      # otro campo
+    python scripts/ejemplo_viga.py --no-show              # solo guarda los archivos
 
 Campos: sigma_1, sigma_2, sigma_xx, sigma_yy, tau_xy, von_mises, displacement
 
@@ -16,6 +16,14 @@ Resultados en la carpeta results/:
     viga.vtu          para abrir en ParaView
     viga_<campo>.png  la figura
 """
+
+# Los scripts están en scripts/: se ejecutan desde la raíz del repositorio,
+# para que encuentren el paquete source/ y las rutas meshes/ y results/.
+import os
+import sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+os.chdir(ROOT)
 
 import argparse
 

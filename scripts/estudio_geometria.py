@@ -12,12 +12,20 @@ empotrada): momento de las reacciones, desplazamiento de la cresta y
 tensión principal en el paramento aguas arriba.
 
 Uso:
-    python estudio_geometria.py
-    python estudio_geometria.py --sin-fem          # solo cálculo manual (rápido)
-    python estudio_geometria.py --no-show
+    python scripts/estudio_geometria.py
+    python scripts/estudio_geometria.py --sin-fem          # solo cálculo manual (rápido)
+    python scripts/estudio_geometria.py --no-show
 
 El reporte queda en results/estudio_geometria.txt
 """
+
+# Los scripts están en scripts/: se ejecutan desde la raíz del repositorio,
+# para que encuentren el paquete source/ y las rutas meshes/ y results/.
+import os
+import sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+os.chdir(ROOT)
 
 import argparse
 import math

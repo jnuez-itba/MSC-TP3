@@ -1,3 +1,11 @@
+# Los scripts están en scripts/: se ejecutan desde la raíz del repositorio,
+# para que encuentren el paquete source/ y las rutas meshes/ y results/.
+import os
+import sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+os.chdir(ROOT)
+
 import numpy
 
 from source.mesh.mesh import Mesh
@@ -10,11 +18,11 @@ from source.output.paraview import write_results
 
 
 mesh = Mesh()
-mesh.read("meshes/triangle.mesh")
+mesh.read("meshes/roof.mesh")
 mesh.dofs_per_node = Bar2D.dofs_per_node
 
 material = LinearElastic(200.0e9, 0.0)
-area = 1.0e-4
+area = 2.0e-3
 
 
 elements = []
@@ -42,10 +50,11 @@ for element in elements:
 f = numpy.zeros(number_of_dofs)
 
 left_support_dofs = mesh.node_global_dofs(0)
-right_support_dofs = mesh.node_global_dofs(1)
-load_node_dofs = mesh.node_global_dofs(2)
+right_support_dofs = mesh.node_global_dofs(12)
+load_node_dofs = mesh.node_global_dofs(18)
 
-f[load_node_dofs[1]] = -1000.0
+f[load_node_dofs[1]] = -10000.0
+
 
 apply_dirichlet_bc(K, f, left_support_dofs[0], 0.0)
 apply_dirichlet_bc(K, f, left_support_dofs[1], 0.0)
@@ -53,4 +62,4 @@ apply_dirichlet_bc(K, f, right_support_dofs[1], 0.0)
 
 u = solve(K, f)
 
-write_results("results/bar.vtu", mesh, elements, u)
+write_results("results/bar_roof.vtu", mesh, elements, u)

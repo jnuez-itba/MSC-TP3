@@ -37,18 +37,26 @@ Opciones: `--mostrar` abre cada gráfico (cerrar la ventana para seguir) y
 
 ## Qué hay en este repositorio
 
-| Ubicación | Contenido |
-|-----------|-----------|
-| `informe_TP3_final.pdf` | Informe del trabajo |
-| `ejecutar_todo.py` | Ejecuta todos los pasos en orden |
-| `patch_test.py`, `ejemplo_viga.py` | Verificación del código |
-| `generar_malla_presa.py`, `analisis_presa.py`, `estudio_geometria.py` | Aplicación: presa de gravedad |
-| `source/` | Código de elementos finitos (ver Estructura) |
-| `meshes/` | Mallas en el formato del TP (ver Formato de malla) |
-| `tests/` | Tests automáticos |
-| `Imagenes/` | Figuras de resultados de la presa |
-| `presa_resultados.txt` | Reporte del análisis de la presa |
-| `bar.py`, `bar_roof.py` | Ejemplos de barras de la clase (código base) |
+```
+ejecutar_todo.py     ejecuta todo el trabajo en orden (punto de entrada)
+informe/             informe final en PDF
+  resultados/        reporte de la presa y figuras usadas en el informe
+scripts/             scripts de cada paso (los llama ejecutar_todo.py)
+  patch_test.py          patch test de los 4 elementos
+  ejemplo_viga.py        viga en voladizo: verificación y visualización
+  generar_malla_presa.py malla de la presa
+  analisis_presa.py      presa: cálculo manual, FEM, momentos, apoyos
+  estudio_geometria.py   variaciones de geometría y factor de seguridad
+  bar.py, bar_roof.py    ejemplos de barras de la clase (código base)
+source/              código de elementos finitos
+meshes/              mallas en el formato del TP
+tests/               tests automáticos (pytest)
+requirements.txt     librerías necesarias
+```
+
+Cada script se puede correr por separado desde la raíz del repositorio, por
+ejemplo `python scripts/analisis_presa.py --support robin`. Los resultados que
+generan quedan en `results/` (no se sube al repositorio).
 
 ## Elementos disponibles
 
@@ -59,7 +67,7 @@ Opciones: `--mostrar` abre cada gráfico (cerrar la ventana para seguir) y
 | QUAD    | 1     | 4     | Quad4  | 2 x 2       |
 | QUAD    | 2     | 9     | Q9     | 3 x 3       |
 
-Todos pasan el patch test (`python patch_test.py`).
+Todos pasan el patch test (`python scripts/patch_test.py`).
 
 ## Estructura
 
@@ -86,14 +94,14 @@ pip install -r requirements.txt
 ## Uso
 
 ```
-python patch_test.py     # patch test de los 4 elementos (versiones A y B)
+python scripts/patch_test.py     # patch test de los 4 elementos (versiones A y B)
 python -m pytest         # todos los tests
-python ejemplo_viga.py   # viga en voladizo: comparación con teoría y deformada
-python generar_malla_presa.py   # malla de la presa (ver abajo)
-python analisis_presa.py        # análisis de la presa (ver abajo)
-python estudio_geometria.py     # variaciones de geometría (ver abajo)
-python bar.py            # ejemplos de barras de la clase
-python bar_roof.py
+python scripts/ejemplo_viga.py   # viga en voladizo: comparación con teoría y deformada
+python scripts/generar_malla_presa.py   # malla de la presa (ver abajo)
+python scripts/analisis_presa.py        # análisis de la presa (ver abajo)
+python scripts/estudio_geometria.py     # variaciones de geometría (ver abajo)
+python scripts/bar.py            # ejemplos de barras de la clase
+python scripts/bar_roof.py
 ```
 
 ## Visualización
@@ -102,7 +110,7 @@ La solución se puede ver sobre la configuración deformada, con un factor de
 escala elegible, de dos formas. Ejemplo con la viga:
 
 ```
-python ejemplo_viga.py --scale 50 --field sigma_1
+python scripts/ejemplo_viga.py --scale 50 --field sigma_1
 ```
 
 1. **matplotlib** (`source/output/plot.py`): `plot_deformed(mesh, elements, u,
@@ -170,9 +178,9 @@ la malla tenga un nodo en ese nivel.
 cresta 3 m, borde libre 2 m) y la escribe en el formato de malla:
 
 ```
-python generar_malla_presa.py                          # Q9, elementos de ~1 m
-python generar_malla_presa.py --element TRI6 --size 0.5
-python generar_malla_presa.py --batter 3               # talud aguas arriba
+python scripts/generar_malla_presa.py                          # Q9, elementos de ~1 m
+python scripts/generar_malla_presa.py --element TRI6 --size 0.5
+python scripts/generar_malla_presa.py --batter 3               # talud aguas arriba
 ```
 
 La sección es un cuadrilátero y se malla con un mapeo bilineal
@@ -190,10 +198,10 @@ En `meshes/presa/` están las mallas por defecto para los 4 tipos de elemento.
 ## Análisis de la presa
 
 ```
-python analisis_presa.py                       # base empotrada, malla Q9
-python analisis_presa.py --support roller      # rodillo (sin fricción)
-python analisis_presa.py --support robin       # Robin: fundación elástica
-python analisis_presa.py --comparar            # estudio completo
+python scripts/analisis_presa.py                       # base empotrada, malla Q9
+python scripts/analisis_presa.py --support roller      # rodillo (sin fricción)
+python scripts/analisis_presa.py --support robin       # Robin: fundación elástica
+python scripts/analisis_presa.py --comparar            # estudio completo
 ```
 
 1. **Cálculo manual** (`source/dam/stability.py`): peso, empuje, momento
@@ -227,8 +235,8 @@ El reporte queda en `results/presa_resultados.txt` (con `--support roller` o
 ## Variaciones de geometría
 
 ```
-python estudio_geometria.py            # cálculo manual + verificación FEM
-python estudio_geometria.py --sin-fem  # solo cálculo manual
+python scripts/estudio_geometria.py            # cálculo manual + verificación FEM
+python scripts/estudio_geometria.py --sin-fem  # solo cálculo manual
 ```
 
 Recorre cuatro familias de variantes (`source/dam/study.py`): base más

@@ -4,8 +4,16 @@
   B) por fuerzas: tracción de tensión constante en el borde, apoyos mínimos
 
 Uso:
-    python patch_test.py
+    python scripts/patch_test.py
 """
+
+# Los scripts están en scripts/: se ejecutan desde la raíz del repositorio,
+# para que encuentren el paquete source/ y las rutas meshes/ y results/.
+import os
+import sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+os.chdir(ROOT)
 
 from source.verification.patch import run_patch_test
 from source.verification.patch import run_patch_test_forces

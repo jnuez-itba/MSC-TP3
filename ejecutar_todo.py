@@ -47,34 +47,34 @@ STEPS = [
     ("Tests automáticos",
      "Verifican cuadratura, material, elementos, cargas, mallas y la presa.\n"
      "Tiene que terminar con '81 passed'.",
-     [PYTHON, "-m", "pytest", "-q"]),
+     [PYTHON, "-m", "pytest", "-q", "tests"]),
 
     ("Patch test",
      "Cada elemento (TRI3, QUAD4, TRI6, QUAD9) tiene que reproducir exactamente\n"
      "un estado de tensión constante: A) imponiendo desplazamientos lineales\n"
      "en el borde y B) aplicando una tracción constante. Error ~1e-14 = PASA.",
-     [PYTHON, "patch_test.py"]),
+     [PYTHON, "scripts/patch_test.py"]),
 
     ("Ejemplo de verificación: viga en voladizo",
      "Viga de QUAD9 con carga distribuida. Compara la flecha con la teoría de\n"
      "vigas y dibuja la deformada con un factor de escala.",
-     [PYTHON, "ejemplo_viga.py"] + NO_SHOW),
+     [PYTHON, "scripts/ejemplo_viga.py"] + NO_SHOW),
 
     ("Malla de la presa",
      "Genera la sección de la presa (H = 30 m, base 18 m, cresta 3 m) en el\n"
      "formato de malla del TP y la dibuja con sus conjuntos de nodos y lados.\n"
      "(Se escribe en results/ para no modificar las mallas del repositorio.)",
-     [PYTHON, "generar_malla_presa.py", "--out", "results/presa_quad9.mesh"] + NO_SHOW),
+     [PYTHON, "scripts/generar_malla_presa.py", "--out", "results/presa_quad9.mesh"] + NO_SHOW),
 
     ("Presa con base empotrada",
      "Cálculo manual (peso, empuje, Ms, Md, FS, tercio central) y modelo FEM.\n"
      "El momento de las reacciones tiene que ser igual y opuesto a Ms - Md.\n"
      "Dibuja sigma_1 sobre la deformada.",
-     [PYTHON, "analisis_presa.py"] + NO_SHOW),
+     [PYTHON, "scripts/analisis_presa.py"] + NO_SHOW),
 
     ("Presa con base Robin (bonus)",
      "Misma presa sobre resortes de Winkler (fundación elástica).",
-     [PYTHON, "analisis_presa.py", "--support", "robin"] + NO_SHOW),
+     [PYTHON, "scripts/analisis_presa.py", "--support", "robin"] + NO_SHOW),
 ]
 
 if not args.rapido:
@@ -82,13 +82,13 @@ if not args.rapido:
         ("Estudio comparativo",
          "Compara los 4 elementos, refina la malla, compara empotrada / rodillo /\n"
          "Robin y deformación plana vs tensión plana. Puede tardar un poco.",
-         [PYTHON, "analisis_presa.py", "--comparar"] + NO_SHOW))
+         [PYTHON, "scripts/analisis_presa.py", "--comparar"] + NO_SHOW))
 
 STEPS.append(
     ("Variaciones de geometría",
      "Cuatro familias de geometrías: base más ancha, talón extendido, cresta\n"
      "más ancha y talud. Factor de seguridad al vuelco vs área de hormigón.",
-     [PYTHON, "estudio_geometria.py"] + (["--sin-fem"] if args.rapido else []) + NO_SHOW))
+     [PYTHON, "scripts/estudio_geometria.py"] + (["--sin-fem"] if args.rapido else []) + NO_SHOW))
 
 
 def banner(text):
@@ -104,7 +104,7 @@ start_all = time.time()
 for k, (title, explanation, command) in enumerate(STEPS, start=1):
     banner("PASO {} de {}: {}".format(k, len(STEPS), title))
     print(explanation)
-    print("\n> " + " ".join(os.path.basename(c) if c == PYTHON else c for c in command))
+    print("\n> " + " ".join("python" if c == PYTHON else c for c in command))
     print()
 
     start = time.time()

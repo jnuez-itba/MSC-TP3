@@ -1,14 +1,22 @@
 """Genera la malla de la presa de gravedad y la guarda en el formato del TP.
 
 Uso:
-    python generar_malla_presa.py                          # Q9, elementos de 1 m
-    python generar_malla_presa.py --element TRI6 --size 0.5
-    python generar_malla_presa.py --batter 3               # talud aguas arriba de 3 m
-    python generar_malla_presa.py --no-show                # sin abrir la figura
+    python scripts/generar_malla_presa.py                          # Q9, elementos de 1 m
+    python scripts/generar_malla_presa.py --element TRI6 --size 0.5
+    python scripts/generar_malla_presa.py --batter 3               # talud aguas arriba de 3 m
+    python scripts/generar_malla_presa.py --no-show                # sin abrir la figura
 
 Por defecto escribe meshes/presa/presa_<elemento>.mesh y la figura
 results/malla_presa_<elemento>.png.
 """
+
+# Los scripts están en scripts/: se ejecutan desde la raíz del repositorio,
+# para que encuentren el paquete source/ y las rutas meshes/ y results/.
+import os
+import sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+os.chdir(ROOT)
 
 import argparse
 

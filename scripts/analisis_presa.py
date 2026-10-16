@@ -14,17 +14,25 @@ Hipótesis: estado plano de DEFORMACIÓN (ezz = 0), según indicó la cátedra.
 El material se lee del archivo de malla (meshes/presa/*.mesh).
 
 Uso:
-    python analisis_presa.py                         # base empotrada, Q9
-    python analisis_presa.py --support roller        # rodillo (sin fricción)
-    python analisis_presa.py --support robin         # Robin: fundación elástica
-    python analisis_presa.py --support robin --e-fundacion 5e9
-    python analisis_presa.py --mesh meshes/presa/presa_tri6.mesh
-    python analisis_presa.py --scale 5000 --field von_mises
-    python analisis_presa.py --comparar --no-show    # estudio completo
+    python scripts/analisis_presa.py                         # base empotrada, Q9
+    python scripts/analisis_presa.py --support roller        # rodillo (sin fricción)
+    python scripts/analisis_presa.py --support robin         # Robin: fundación elástica
+    python scripts/analisis_presa.py --support robin --e-fundacion 5e9
+    python scripts/analisis_presa.py --mesh meshes/presa/presa_tri6.mesh
+    python scripts/analisis_presa.py --scale 5000 --field von_mises
+    python scripts/analisis_presa.py --comparar --no-show    # estudio completo
 
 El reporte se imprime y se guarda en results/presa_resultados.txt
 (results/presa_resultados_<apoyo>.txt para rodillo y Robin)
 """
+
+# Los scripts están en scripts/: se ejecutan desde la raíz del repositorio,
+# para que encuentren el paquete source/ y las rutas meshes/ y results/.
+import os
+import sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+os.chdir(ROOT)
 
 import argparse
 import math
