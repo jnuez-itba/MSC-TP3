@@ -32,10 +32,19 @@ terminal, y deja los resultados en `results/`:
 7. Estudio comparativo: elementos, refinamiento y condiciones de borde.
 8. Variaciones de geometría para aumentar el factor de seguridad.
 
-Por defecto va **paso a paso**: frena antes de cada paso (seguir con Enter) y
-muestra los gráficos en ventanas (cerrarlas para continuar). Opciones:
-`--automatico` corre todo seguido sin ventanas (las figuras se guardan igual
-en `results/`) y `--rapido` saltea los estudios más largos.
+Por defecto va **paso a paso**: empieza con un saludo y, antes de cada paso,
+explica qué hace y espera: [Enter] ejecutar, [s] saltear, [q] salir. Los
+gráficos se abren en ventanas (cerrarlas para continuar) y al terminar cada
+paso muestra su resultado clave. Al final, un resumen y la opción de abrir el
+informe. Antes de empezar verifica que estén instaladas las librerías.
+
+```
+python ejecutar_todo.py --automatico   # todo seguido, sin pausas ni ventanas
+python ejecutar_todo.py --rapido       # saltea los estudios más largos
+python ejecutar_todo.py --paso 5       # solo el paso 5
+python ejecutar_todo.py --desde 5      # del paso 5 en adelante
+python ejecutar_todo.py --sin-color    # sin colores en la terminal
+```
 
 ## Qué hay en este repositorio
 
