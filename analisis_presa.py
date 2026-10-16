@@ -23,6 +23,7 @@ Uso:
     python analisis_presa.py --comparar --no-show    # estudio completo
 
 El reporte se imprime y se guarda en results/presa_resultados.txt
+(results/presa_resultados_<apoyo>.txt para rodillo y Robin)
 """
 
 import argparse
@@ -77,7 +78,11 @@ SUPPORT_NAMES = {
 }
 
 os.makedirs("results", exist_ok=True)
-report_file = open("results/presa_resultados.txt", "w", encoding="utf-8")
+# Un reporte por condición de borde, para que no se pisen entre corridas
+REPORT_NAME = "results/presa_resultados.txt"
+if args.support != "fixed":
+    REPORT_NAME = "results/presa_resultados_" + args.support + ".txt"
+report_file = open(REPORT_NAME, "w", encoding="utf-8")
 
 
 def report(text=""):

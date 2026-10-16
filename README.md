@@ -13,6 +13,43 @@ se resuelve en **estado plano de deformación**, según indicó la cátedra
 sección. En deformación plana aparece la tensión fuera del plano
 szz = nu (sxx + syy), que también se informa.
 
+## Inicio rápido
+
+```
+pip install -r requirements.txt
+python ejecutar_todo.py
+```
+
+`ejecutar_todo.py` corre todo el trabajo en orden, explicando cada paso en la
+terminal, y deja los resultados en `results/`:
+
+1. Tests automáticos (`pytest`, 81 tests).
+2. Patch test de los 4 elementos.
+3. Ejemplo de verificación: viga en voladizo frente a la teoría de vigas.
+4. Malla de la presa.
+5. Presa con base empotrada: cálculo manual vs FEM, momentos y reacciones.
+6. Presa con base Robin (fundación elástica).
+7. Estudio comparativo: elementos, refinamiento y condiciones de borde.
+8. Variaciones de geometría para aumentar el factor de seguridad.
+
+Opciones: `--mostrar` abre cada gráfico (cerrar la ventana para seguir) y
+`--rapido` saltea los estudios más largos. Tarda menos de un minuto.
+
+## Qué hay en este repositorio
+
+| Ubicación | Contenido |
+|-----------|-----------|
+| `informe_TP3_final.pdf` | Informe del trabajo |
+| `ejecutar_todo.py` | Ejecuta todos los pasos en orden |
+| `patch_test.py`, `ejemplo_viga.py` | Verificación del código |
+| `generar_malla_presa.py`, `analisis_presa.py`, `estudio_geometria.py` | Aplicación: presa de gravedad |
+| `source/` | Código de elementos finitos (ver Estructura) |
+| `meshes/` | Mallas en el formato del TP (ver Formato de malla) |
+| `tests/` | Tests automáticos |
+| `Imagenes/` | Figuras de resultados de la presa |
+| `presa_resultados.txt` | Reporte del análisis de la presa |
+| `bar.py`, `bar_roof.py` | Ejemplos de barras de la clase (código base) |
+
 ## Elementos disponibles
 
 | Familia | Orden | Nodos | Nombre | Integración |
@@ -184,7 +221,8 @@ mallas distintas sean comparables. En las esquinas de la base empotrada la
 tensión es singular (crece al refinar), así que la escala de colores se
 satura con los valores a más de 1 m de esas esquinas.
 
-El reporte queda en `results/presa_resultados.txt`.
+El reporte queda en `results/presa_resultados.txt` (con `--support roller` o
+`robin`, en `results/presa_resultados_<apoyo>.txt`).
 
 ## Variaciones de geometría
 
