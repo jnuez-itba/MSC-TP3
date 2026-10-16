@@ -9,7 +9,7 @@ $EndParameters
 
 $Materials
 # id  tipo                  E        nu    densidad
-1     ELASTIC_PLANE_STRESS  21.0e9   0.2   0.0
+1     ELASTIC_PLANE_STRAIN  21.0e9   0.2   0.0
 $EndMaterials
 
 $Nodes

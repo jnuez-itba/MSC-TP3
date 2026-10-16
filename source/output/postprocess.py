@@ -15,16 +15,19 @@ def nodal_displacements(mesh, u):
     return displacements
 
 
-def nodal_stresses(mesh, elements, u):
-    """Matriz n_nodos x 3 con [sxx, syy, txy] en cada nodo.
+def nodal_stress_components(mesh, elements, u):
+    """Matriz n_nodos x 4 con [sxx, syy, txy, szz] en cada nodo.
 
     La tensión de elementos finitos es discontinua entre elementos: cada
     elemento da un valor distinto en un nodo compartido. Se toma el promedio
     de los elementos que comparten el nodo (suavizado nodal).
+
+    szz es la tensión fuera del plano: 0 en tensión plana y nu (sxx + syy)
+    en deformación plana (la calcula el material de cada elemento).
     """
     n_nodes = mesh.number_of_nodes()
 
-    total = numpy.zeros((n_nodes, 3))
+    total = numpy.zeros((n_nodes, 4))
     count = numpy.zeros(n_nodes)
 
     for element in elements:
@@ -32,7 +35,10 @@ def nodal_stresses(mesh, elements, u):
 
         for a in range(element.number_of_nodes):
             node_id = element.node_global_ids[a]
-            total[node_id] = total[node_id] + stresses[a]
+            sxx, syy, txy = stresses[a]
+            szz = element.material.out_of_plane_stress(sxx, syy)
+
+            total[node_id] = total[node_id] + numpy.array([sxx, syy, txy, szz])
             count[node_id] = count[node_id] + 1
 
     for i in range(n_nodes):
@@ -40,6 +46,11 @@ def nodal_stresses(mesh, elements, u):
             total[i] = total[i] / count[i]
 
     return total
+
+
+def nodal_stresses(mesh, elements, u):
+    """Matriz n_nodos x 3 con [sxx, syy, txy] en cada nodo (promediadas)."""
+    return nodal_stress_components(mesh, elements, u)[:, 0:3]
 
 
 def principal_stresses(sxx, syy, txy):
@@ -57,18 +68,26 @@ def principal_stresses(sxx, syy, txy):
     return center + radius, center - radius, theta
 
 
-def von_mises(sxx, syy, txy):
-    """Tensión equivalente de von Mises en tensión plana (szz = 0)."""
-    return numpy.sqrt(sxx * sxx - sxx * syy + syy * syy + 3.0 * txy * txy)
+def von_mises(sxx, syy, txy, szz=0.0):
+    """Tensión equivalente de von Mises con la tensión fuera del plano szz
+    (szz = 0 en tensión plana)."""
+    return numpy.sqrt(sxx * sxx + syy * syy + szz * szz
+                      - sxx * syy - syy * szz - szz * sxx + 3.0 * txy * txy)
 
 
 def stress_fields(mesh, elements, u):
-    """Diccionario con todos los campos nodales de tensión, en Pa."""
-    stresses = nodal_stresses(mesh, elements, u)
+    """Diccionario con todos los campos nodales de tensión, en Pa.
+
+    sigma_1, sigma_2  tensiones principales EN EL PLANO de la sección
+    sigma_zz          tensión fuera del plano (no nula en deformación plana)
+    von_mises         tensión equivalente, incluyendo sigma_zz
+    """
+    stresses = nodal_stress_components(mesh, elements, u)
 
     sxx = stresses[:, 0]
     syy = stresses[:, 1]
     txy = stresses[:, 2]
+    szz = stresses[:, 3]
 
     s1, s2, theta = principal_stresses(sxx, syy, txy)
 
@@ -76,9 +95,10 @@ def stress_fields(mesh, elements, u):
         "sigma_xx": sxx,
         "sigma_yy": syy,
         "tau_xy": txy,
+        "sigma_zz": szz,
         "sigma_1": s1,
         "sigma_2": s2,
-        "von_mises": von_mises(sxx, syy, txy),
+        "von_mises": von_mises(sxx, syy, txy, szz),
     }
 
 

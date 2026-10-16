@@ -31,7 +31,7 @@ $EndParameters
 #          ELASTIC_PLANE_STRAIN  (deformación plana, ezz = 0)
 # -----------------------------------------------------------------------------
 $Materials
-1  ELASTIC_PLANE_STRESS  21.0e9   0.2   2400.0
+1  ELASTIC_PLANE_STRAIN  21.0e9   0.2   2400.0
 2  ELASTIC_PLANE_STRESS  200.0e9  0.3   7850.0
 $EndMaterials
 

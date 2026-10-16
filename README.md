@@ -1,11 +1,17 @@
-# TP3 - Estado plano de tensión
+# TP3 - Elasticidad plana
 
 30.53 Mecánica del Sólido Computacional - ITBA
 
 Código de elementos finitos en Python para modelar el equilibrio estático de un
-sólido elástico lineal en estado plano de tensión. Parte de la estructura vista
-en clase para barras 2D (`bar.py`, `bar_roof.py`) y la extiende a elementos de
-sólido 2D.
+sólido elástico lineal en estado plano. Parte de la estructura vista en clase
+para barras 2D (`bar.py`, `bar_roof.py`) y la extiende a elementos de sólido 2D.
+
+El material admite **estado plano de tensión** (szz = 0) y **estado plano de
+deformación** (ezz = 0); la hipótesis se elige en el archivo de malla. La presa
+se resuelve en **estado plano de deformación**, según indicó la cátedra
+(`source/dam/material.py`): es muy larga en la dirección perpendicular a la
+sección. En deformación plana aparece la tensión fuera del plano
+szz = nu (sxx + syy), que también se informa.
 
 ## Elementos disponibles
 
@@ -66,7 +72,8 @@ python ejemplo_viga.py --scale 50 --field sigma_1
    field, scale)` dibuja la malla deformada (desplazamientos x `scale`)
    coloreada con el campo elegido, sobre la malla original en gris. Si no se
    da `scale`, se elige uno automático (desplazamiento máximo = 5% del modelo).
-   Campos: `sigma_1`, `sigma_2`, `sigma_xx`, `sigma_yy`, `tau_xy`, `von_mises`,
+   Campos: `sigma_1`, `sigma_2` (principales en el plano), `sigma_xx`,
+   `sigma_yy`, `tau_xy`, `sigma_zz` (fuera del plano), `von_mises`,
    `displacement`. Los campos con signo usan una escala divergente centrada en
    cero (rojo tracción, azul compresión).
 
@@ -170,7 +177,7 @@ python analisis_presa.py --comparar            # estudio completo
 3. **Figuras**: tensión principal máxima sobre la deformada y tensiones
    normales en la base (FEM vs ley trapecial); `.vtu` para ParaView.
 4. **Estudio** (`--comparar`): 4 tipos de elemento, refinamiento de malla,
-   condiciones de borde y tensión plana vs deformación plana.
+   condiciones de borde y deformación plana (adoptada) vs tensión plana.
 
 Las tensiones se comparan en puntos fijos (`stress_at_point`) para que las
 mallas distintas sean comparables. En las esquinas de la base empotrada la
@@ -218,7 +225,7 @@ Espesor del sólido (por defecto 1).
 ```
 $Materials
 # id  tipo                  E        nu    densidad
-1     ELASTIC_PLANE_STRESS  21.0e9   0.2   2400.0
+1     ELASTIC_PLANE_STRAIN  21.0e9   0.2   2400.0
 $EndMaterials
 ```
 

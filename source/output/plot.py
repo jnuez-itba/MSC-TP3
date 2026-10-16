@@ -39,6 +39,7 @@ FIELDS = {
     "sigma_xx": ("$\\sigma_{xx}$", 1.0e-6, "MPa"),
     "sigma_yy": ("$\\sigma_{yy}$", 1.0e-6, "MPa"),
     "tau_xy": ("$\\tau_{xy}$", 1.0e-6, "MPa"),
+    "sigma_zz": ("$\\sigma_{zz}$ (fuera del plano)", 1.0e-6, "MPa"),
     "von_mises": ("Tensión de von Mises", 1.0e-6, "MPa"),
     "displacement": ("Desplazamiento total $|u|$", 1.0e3, "mm"),
 }
@@ -119,7 +120,7 @@ def plot_deformed(mesh, elements, u, field="sigma_1", scale=None,
     """Dibuja la configuración deformada coloreada con un campo.
 
     field     uno de FIELDS: sigma_1, sigma_2, sigma_xx, sigma_yy, tau_xy,
-              von_mises, displacement
+              sigma_zz, von_mises, displacement
     scale     factor de amplificación de los desplazamientos. Si es None se
               elige uno automático (desplazamiento máximo = 5% del modelo).
     filename  si se indica, guarda la figura (por ejemplo results/fig.png)

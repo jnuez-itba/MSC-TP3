@@ -1,7 +1,7 @@
 """Ejemplo: viga en voladizo con carga distribuida.
 
 Viga de 10 m x 1 m (Q9), empotrada en x = 0, con una presión q sobre la cara
-superior. Compara la flecha en la punta con la teoría de vigas y muestra la
+superior, en estado plano de deformación (el material sale de la malla). Compara la flecha en la punta con la teoría de vigas y muestra la
 deformada.
 
 Uso:
@@ -30,6 +30,7 @@ from source.solvers.linear import solve
 from source.output.paraview import write_solid_results
 from source.output.plot import plot_deformed
 from source.output.plot import FIELDS
+from source.materials.linear_elastic import PLANE_STRAIN
 
 
 parser = argparse.ArgumentParser(description="Viga en voladizo")
@@ -78,6 +79,10 @@ material = mesh.element_material(0)
 t = mesh.thickness
 E = material.E
 G = E / (2.0 * (1.0 + material.nu))
+
+# En deformación plana la viga es más rígida en flexión: E' = E / (1 - nu^2)
+if material.hypothesis == PLANE_STRAIN:
+    E = E / (1.0 - material.nu ** 2)
 I = t * h ** 3 / 12.0
 A = t * h
 w = q * t                            # carga por unidad de largo [N/m]

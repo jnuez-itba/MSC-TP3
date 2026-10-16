@@ -1,6 +1,7 @@
 import numpy
 
 from source.materials.linear_elastic import LinearElastic
+from source.materials.linear_elastic import PLANE_STRAIN
 from source.elements.factory import create_elements
 from source.systems.dense_matrix import DenseMatrix
 from source.systems.boundary_conditions import apply_dirichlet_bc
@@ -230,3 +231,47 @@ def test_reactions_balance_weight_and_water_thrust():
         for node_id in free:
             for dof in mesh.node_global_dofs(node_id):
                 assert abs(R[dof]) < 1.0e-6 * W
+
+
+def test_self_weight_column_plane_strain_is_exact():
+    # En deformación plana vale la misma solución de la columna, con las
+    # constantes equivalentes E' = E/(1 - nu^2) y nu' = nu/(1 - nu).
+    width = 1.0
+    H = 2.0
+    material = LinearElastic(E, NU, RHO, PLANE_STRAIN)
+    E_eq = E / (1.0 - NU ** 2)
+    nu_eq = NU / (1.0 - NU)
+    c = RHO * GRAVITY / E_eq
+
+    def exact(x, y):
+        u = nu_eq * c * (H - y) * x
+        v = -c * (H * y - y * y / 2.0) + nu_eq * c * x * x / 2.0
+        return u, v
+
+    for element_type in ["TRI6", "QUAD9"]:
+        mesh = rectangle_mesh(width, H, 2, 3, element_type, material)
+        elements = create_elements(mesh)
+
+        K = DenseMatrix(mesh.number_of_dofs())
+        for element in elements:
+            K.scatter_local_to_global(element)
+
+        f = numpy.zeros(mesh.number_of_dofs())
+        add_self_weight(f, elements)
+
+        for node_id in mesh.node_sets["boundary"]:
+            node = mesh.node(node_id)
+            dofs = mesh.node_global_dofs(node_id)
+            u_exact, v_exact = exact(node.x, node.y)
+            apply_dirichlet_bc(K, f, dofs[0], u_exact)
+            apply_dirichlet_bc(K, f, dofs[1], v_exact)
+
+        u = solve(K, f)
+
+        scale = c * H * H
+        for node in mesh.nodes:
+            dofs = mesh.node_global_dofs(node.global_id)
+            u_exact, v_exact = exact(node.x, node.y)
+
+            assert abs(u[dofs[0]] - u_exact) < 1.0e-10 * scale
+            assert abs(u[dofs[1]] - v_exact) < 1.0e-10 * scale

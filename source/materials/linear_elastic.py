@@ -67,3 +67,14 @@ class LinearElastic:
             [nu, 1.0 - nu, 0.0],
             [0.0, 0.0, (1.0 - 2.0 * nu) / 2.0],
         ])
+
+    def out_of_plane_stress(self, sxx, syy):
+        """Tensión normal fuera del plano szz.
+
+        Tensión plana:      szz = 0 (hipótesis).
+        Deformación plana:  ezz = 0  ->  szz = nu (sxx + syy).
+        """
+        if self.hypothesis == PLANE_STRAIN:
+            return self.nu * (sxx + syy)
+
+        return 0.0 * sxx

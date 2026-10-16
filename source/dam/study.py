@@ -19,7 +19,7 @@ from source.dam.geometry import DamGeometry
 from source.dam.stability import stability
 from source.dam.model import solve_dam
 from source.mesh.generators import dam_mesh
-from source.materials.linear_elastic import LinearElastic
+from source.dam.material import dam_material
 from source.output.postprocess import nodal_displacements
 from source.output.postprocess import stress_at_point
 from source.output.postprocess import principal_stresses
@@ -75,9 +75,9 @@ def face_x(geometry, y):
     return -a + a * y / geometry.height
 
 
-def evaluate(geometry, fem=True, element_type="QUAD9", element_size=1.5,
-             E=21.0e9, nu=0.2):
-    """Estabilidad a mano y, si fem=True, resultados del modelo FEM."""
+def evaluate(geometry, fem=True, element_type="QUAD9", element_size=1.5):
+    """Estabilidad a mano y, si fem=True, resultados del modelo FEM
+    (hormigón en deformación plana)."""
     hand = stability(geometry)
 
     result = {
@@ -95,7 +95,7 @@ def evaluate(geometry, fem=True, element_type="QUAD9", element_size=1.5,
     if not fem:
         return result
 
-    material = LinearElastic(E, nu, geometry.concrete_density)
+    material = dam_material(density=geometry.concrete_density)
     mesh = dam_mesh(material, element_type, element_size, geometry.height,
                     geometry.base, geometry.crest, geometry.freeboard,
                     geometry.upstream_batter)

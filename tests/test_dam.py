@@ -5,6 +5,7 @@ import numpy
 from source.mesh.mesh import Mesh
 from source.mesh.generators import dam_mesh
 from source.materials.linear_elastic import LinearElastic
+from source.dam.material import dam_material
 from source.elements.factory import create_elements
 from source.systems.loads import GRAVITY
 from source.dam.geometry import DamGeometry
@@ -19,7 +20,7 @@ from source.verification.patch import exact_strain
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-MATERIAL = LinearElastic(21.0e9, 0.2, 2400.0)
+MATERIAL = dam_material()
 
 
 def test_hand_calculation_default_dam():

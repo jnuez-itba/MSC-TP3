@@ -14,6 +14,8 @@ from source.materials.linear_elastic import LinearElastic
 from source.output.postprocess import principal_stresses
 from source.output.postprocess import von_mises
 from source.output.postprocess import nodal_stresses
+from source.output.postprocess import stress_fields
+from source.materials.linear_elastic import PLANE_STRAIN
 from source.output.paraview import write_solid_results
 from source.output.paraview import VTK_CELL_TYPES
 from source.output.plot import plot_deformed
@@ -157,3 +159,30 @@ def test_plot_deformed_saves_figure():
         assert scale > 0.0
     finally:
         os.remove(filename)
+
+
+def test_von_mises_with_out_of_plane_stress():
+    # estado hidrostático: von Mises nulo
+    assert abs(von_mises(-5.0, -5.0, 0.0, -5.0)) < 1.0e-12
+    # uniaxial en z
+    assert abs(von_mises(0.0, 0.0, 0.0, 7.0) - 7.0) < 1.0e-12
+
+
+def test_sigma_zz_in_plane_strain():
+    # Con un campo lineal en deformación plana, szz = nu (sxx + syy) en todos
+    # los nodos; en tensión plana, szz = 0.
+    for hypothesis in [PLANE_STRAIN, "plane_stress"]:
+        material = LinearElastic(21.0e9, 0.2, 2400.0, hypothesis)
+        mesh = rectangle_mesh(2.0, 1.0, 2, 2, "QUAD9", material)
+        elements = create_elements(mesh)
+
+        u = numpy.zeros(mesh.number_of_dofs())
+        for node in mesh.nodes:
+            dofs = mesh.node_global_dofs(node.global_id)
+            u[dofs[0]], u[dofs[1]] = exact_displacement(node.x, node.y)
+
+        fields = stress_fields(mesh, elements, u)
+        sxx, syy, txy = material.D @ exact_strain()
+
+        expected = 0.2 * (sxx + syy) if hypothesis == PLANE_STRAIN else 0.0
+        assert numpy.allclose(fields["sigma_zz"], expected, atol=1.0e-6 * abs(sxx))

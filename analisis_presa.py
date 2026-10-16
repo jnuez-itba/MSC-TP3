@@ -8,7 +8,10 @@
 3. Figuras: tensión principal máxima sobre la deformada y tensiones en la
    base (FEM vs ley trapecial). Archivo .vtu para ParaView.
 4. Con --comparar: elementos, refinamiento de malla, condiciones de borde y
-   tensión plana vs deformación plana.
+   deformación plana (adoptada) vs tensión plana.
+
+Hipótesis: estado plano de DEFORMACIÓN (ezz = 0), según indicó la cátedra.
+El material se lee del archivo de malla (meshes/presa/*.mesh).
 
 Uso:
     python analisis_presa.py                         # base empotrada, Q9
@@ -30,8 +33,8 @@ import numpy
 
 from source.mesh.mesh import Mesh
 from source.mesh.generators import dam_mesh
-from source.materials.linear_elastic import LinearElastic
-from source.materials.linear_elastic import PLANE_STRAIN
+from source.materials.linear_elastic import PLANE_STRESS
+from source.dam.material import dam_material
 from source.dam.geometry import DamGeometry
 from source.dam.stability import stability
 from source.dam.model import solve_dam
@@ -203,6 +206,11 @@ report("2) MODELO FEM")
 report()
 report("  Malla: {}  ({} elementos {}, {} grados de libertad)".format(
     args.mesh, mesh.number_of_elements(), mesh.element_types[0], summary["dofs"]))
+HYPOTHESIS_NAMES = {"plane_strain": "estado plano de deformación (ezz = 0)",
+                    "plane_stress": "estado plano de tensión (szz = 0)"}
+material_used = mesh.element_material(0)
+report("  Hormigón E = {:g} GPa, nu = {:g}; {}".format(
+    material_used.E * 1.0e-9, material_used.nu, HYPOTHESIS_NAMES[material_used.hypothesis]))
 report("  Base {}".format(SUPPORT_NAMES[args.support]))
 if args.support == "robin":
     report("    E fundación = {:g} GPa, nu = {:g}  ->  k_n = E/B = {:.3f} GPa/m,"
@@ -234,6 +242,20 @@ report("  sigma_1 en el paramento aguas arriba, 5 m sobre el talón: {:.3f} MPa"
 report("  sigma_yy en el centro de la base: {:.3f} MPa (ley trapecial: {:.3f} MPa)".format(
     mega(summary["syy_base"]),
     -mega((hand["base_pressure_heel"] + hand["base_pressure_toe"]) / 2.0)))
+
+szz = summary["fields"]["sigma_zz"]
+s1_all = summary["fields"]["sigma_1"]
+if numpy.abs(szz).max() > 0.0:
+    above = int((szz > s1_all).sum())
+    report("  sigma_zz = nu (sxx + syy) (fuera del plano): entre {:.3f} y {:.3f} MPa".format(
+        mega(szz.min()), mega(szz.max())))
+    tensile_above = int(((szz > s1_all) & (szz > 0.0)).sum())
+    report("    supera a sigma_1 (en el plano) en {} de {} nodos, y en {} de ellos es".format(
+        above, mesh.number_of_nodes(), tensile_above))
+    report("    de tracción: solo la supera donde ambas son de compresión. La máxima")
+    report("    tensión principal 3D, max(sigma_1, sigma_zz) = {:.3f} MPa, coincide con".format(
+        mega(numpy.maximum(s1_all, szz).max())))
+    report("    sigma_1 en el plano: el mapa de sigma_1 muestra la tracción máxima.")
 report()
 if args.support == "fixed":
     report("  La tracción máxima aparece en la esquina del talón. Con la base")
@@ -296,7 +318,7 @@ report("  ParaView: results/presa_{}.vtu   (factor de escala usado: {:g})".forma
 # 4. Estudio comparativo
 # ======================================================================
 if args.comparar:
-    material = LinearElastic(21.0e9, 0.2, geometry.concrete_density)
+    material = dam_material()
 
     report()
     report("=" * 72)
@@ -382,20 +404,20 @@ if args.comparar:
                        filename="results/presa_base_comparacion.png",
                        show=SHOW, clip=2.0)
 
-    # --- tensión plana vs deformación plana -------------------------
+    # --- deformación plana (adoptada) vs tensión plana ---------------
     report()
-    report("  d) Tensión plana vs deformación plana (Q9 ~1 m, base empotrada)")
+    report("  d) Deformación plana (adoptada) vs tensión plana (Q9 ~1 m, base empotrada)")
     report()
-    for name, hypothesis in [("tensión plana", None), ("deformación plana", PLANE_STRAIN)]:
-        if hypothesis is None:
-            mat = material
-        else:
-            mat = LinearElastic(21.0e9, 0.2, geometry.concrete_density, hypothesis)
+    for name, mat in [("deformación plana", material),
+                      ("tensión plana", dam_material(PLANE_STRESS))]:
         m = dam_mesh(mat, "QUAD9", 1.0, geometry.height, geometry.base,
                      geometry.crest, geometry.freeboard)
         s = fem_summary(solve_dam(m, geometry.water_level(), "fixed"))
         report("    {:<20} ux cresta = {:.4f} mm   s1 paramento (y=5 m) = {:.3f} MPa".format(
             name, s["ux_crest"] * 1.0e3, mega(s["s1_face"])))
+    report()
+    report("    La presa es muy larga en z: cada sección no puede deformarse fuera del")
+    report("    plano (ezz = 0). Deformación plana es más rígida: E' = E/(1-nu^2).")
 
     report()
     report("  Figura: results/presa_base_comparacion.png")

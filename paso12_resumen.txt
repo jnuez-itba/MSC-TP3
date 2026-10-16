@@ -1,0 +1,71 @@
+PASO 12 - Cambio a estado plano de deformación
+=============================================
+
+Commit: "Cambia el análisis a estado plano de deformación (corrección de la cátedra)"
+
+Motivo
+------
+La cátedra corrigió el enunciado: la presa se resuelve en ESTADO PLANO DE
+DEFORMACIÓN (ezz = 0), no de tensión. Físicamente corresponde a una presa
+muy larga en la dirección perpendicular a la sección: cada rebanada está
+impedida de deformarse en z por las vecinas.
+
+El código ya soportaba las dos hipótesis desde el paso 5 (tipo de material
+ELASTIC_PLANE_STRAIN), así que el cambio es acotado.
+
+
+Teoría
+------
+Deformación plana (ezz = 0):
+
+              E           | 1-nu   nu      0      |
+    D = --------------- * | nu     1-nu    0      |
+        (1+nu)(1-2nu)     | 0      0    (1-2nu)/2 |
+
+Es equivalente a tensión plana con E' = E/(1-nu^2) y nu' = nu/(1-nu): es
+algo más rígida. La tensión fuera del plano NO es nula:
+
+    szz = nu (sxx + syy)
+
+
+Qué se hizo
+-----------
+1) source/dam/material.py (nuevo): el hormigón de la presa (E = 21 GPa,
+   nu = 0.2, rho = 2400 kg/m3) en deformación plana, definido en un solo
+   lugar. Lo usan la generación de mallas, el análisis y el estudio.
+2) linear_elastic.py: out_of_plane_stress(sxx, syy) -> szz.
+3) postprocess.py: campo sigma_zz (promediado en los nodos) y von Mises con
+   szz. sigma_1 y sigma_2 siguen siendo las principales en el plano.
+4) Mallas regeneradas en deformación plana: presa (4 tipos), viga y patch
+   test. El patch test vale para cualquier D: los 4 elementos siguen pasando.
+5) ejemplo_viga.py: la teoría de vigas usa E' = E/(1-nu^2).
+6) analisis_presa.py: informa la hipótesis, el rango de sigma_zz y la
+   comparación pasa a ser "deformación plana (adoptada) vs tensión plana".
+7) Tests nuevos: szz del material, equivalencia E'/nu', columna bajo peso
+   propio exacta en deformación plana, sigma_zz en el post-proceso y von
+   Mises con szz.
+8) README actualizado.
+
+
+Resultados en deformación plana (Q9 ~1 m)
+-----------------------------------------
+Equilibrio y momentos: no cambian (no dependen del material).
+    Ms = 87.94, Md = 35.89, FS = 2.45; momento de las reacciones = -52.05 MN.m/m
+
+                              def. plana   tensión plana
+    ux cresta (empotrada)     0.664 mm     0.675 mm
+    s1 paramento (y = 5 m)    -0.200 MPa   -0.205 MPa
+    s1 máx talón (singular)    1.165 MPa    1.175 MPa
+    ux cresta (Robin)          2.044 mm     2.052 mm
+
+Viga de ejemplo: FEM 69.15 mm vs teoría (con E') 69.26 mm (0.15 %).
+
+sigma_zz = nu (sxx + syy) varía entre -0.14 y +0.23 MPa. Solo supera a
+sigma_1 (en el plano) en nodos donde ambas son de compresión; la máxima
+tensión principal 3D coincide con sigma_1. Por eso el mapa de sigma_1 sigue
+mostrando la tracción máxima, que es lo que pide el enunciado.
+
+El estudio de geometrías no cambia en lo manual (FS, tercio central,
+presiones); con FEM cambian levemente desplazamientos y tensiones.
+
+Tests: 81 de 81 pasan.

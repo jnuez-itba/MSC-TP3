@@ -1,6 +1,6 @@
 # Presa de gravedad - malla generada con generar_malla_presa.py
 # H = 30.0 m, base = 18.0 m, cresta = 3.0 m, borde libre = 2.0 m, talud aguas arriba = 0.0 m
-# Elemento TRI6, tamaño ~1.0 m
+# Elemento TRI6, tamaño ~1.0 m. Hormigón H21 en deformación plana
 # NodeSets: base, heel (talón), toe (pie), upstream, downstream, crest
 # SideSets: base, upstream, upstream_wet (bajo el agua), downstream, crest
 
@@ -10,7 +10,7 @@ $EndParameters
 
 $Materials
 # id  tipo  E  nu  densidad
-1 ELASTIC_PLANE_STRESS 21000000000 0.2 2400
+1 ELASTIC_PLANE_STRAIN 21000000000 0.2 2400
 $EndMaterials
 
 $Nodes

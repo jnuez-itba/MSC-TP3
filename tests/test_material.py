@@ -62,3 +62,21 @@ def test_plane_strain_is_stiffer_than_plane_stress():
     strain = LinearElastic(21.0e9, 0.2, hypothesis=PLANE_STRAIN)
 
     assert strain.D[0][0] > stress.D[0][0]
+
+
+def test_out_of_plane_stress():
+    stress = LinearElastic(21.0e9, 0.2)
+    strain = LinearElastic(21.0e9, 0.2, hypothesis=PLANE_STRAIN)
+
+    assert stress.out_of_plane_stress(3.0e6, -5.0e6) == 0.0
+    assert abs(strain.out_of_plane_stress(3.0e6, -5.0e6) - 0.2 * (-2.0e6)) < 1.0e-6
+
+
+def test_plane_strain_equals_plane_stress_with_modified_constants():
+    # Deformación plana = tensión plana con E' = E/(1 - nu^2), nu' = nu/(1 - nu)
+    E = 21.0e9
+    nu = 0.2
+    strain = LinearElastic(E, nu, hypothesis=PLANE_STRAIN)
+    equivalent = LinearElastic(E / (1.0 - nu ** 2), nu / (1.0 - nu))
+
+    assert numpy.allclose(strain.D, equivalent.D)

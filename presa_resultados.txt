@@ -24,6 +24,7 @@ Suelo impermeable: sin subpresión. Valores por metro de presa.
 2) MODELO FEM
 
   Malla: meshes/presa/presa_quad9.mesh  (330 elementos QUAD9, 2806 grados de libertad)
+  Hormigón E = 21 GPa, nu = 0.2; estado plano de deformación (ezz = 0)
   Base empotrada
 
   Reacciones en la base            FEM          Manual
@@ -31,15 +32,20 @@ Suelo impermeable: sin subpresión. Valores por metro de presa.
     Vertical    Ry [MN/m]         7.4164        7.4164   (= W)
     Momento respecto del pie [MN.m/m]
       de las reacciones         -52.0453      -52.0453   (= -(Ms - Md))
-    Diferencia relativa del momento: 1.7e-16
+    Diferencia relativa del momento: 6.9e-14
 
   Las reacciones equilibran exactamente las cargas: su momento respecto
   del pie es igual y opuesto al momento neto Ms - Md de las cargas.
 
-  Desplazamiento horizontal máximo de la cresta: 0.675 mm
-  sigma_1 máxima: 1.175 MPa en (0.00, 0.00)
-  sigma_1 en el paramento aguas arriba, 5 m sobre el talón: -0.205 MPa
-  sigma_yy en el centro de la base: -0.512 MPa (ley trapecial: -0.412 MPa)
+  Desplazamiento horizontal máximo de la cresta: 0.664 mm
+  sigma_1 máxima: 1.165 MPa en (0.00, 0.00)
+  sigma_1 en el paramento aguas arriba, 5 m sobre el talón: -0.200 MPa
+  sigma_yy en el centro de la base: -0.508 MPa (ley trapecial: -0.412 MPa)
+  sigma_zz = nu (sxx + syy) (fuera del plano): entre -0.139 y 0.231 MPa
+    supera a sigma_1 (en el plano) en 419 de 1403 nodos, y en 0 de ellos es
+    de tracción: solo la supera donde ambas son de compresión. La máxima
+    tensión principal 3D, max(sigma_1, sigma_zz) = 1.165 MPa, coincide con
+    sigma_1 en el plano: el mapa de sigma_1 muestra la tracción máxima.
 
   La tracción máxima aparece en la esquina del talón. Con la base
   empotrada esa esquina es un punto singular: el valor crece al refinar
@@ -58,18 +64,18 @@ Suelo impermeable: sin subpresión. Valores por metro de presa.
 
     Elem       GdL   ux cresta       s1 máx   s1 paramento    syy centro
                           [mm]  talón [MPa]    y=5 m [MPa]    base [MPa]
-    TRI3       744      0.6713        0.278         -0.149        -0.510
-    QUAD4      744      0.6729        0.680         -0.161        -0.495
-    TRI6      2806      0.6747        0.644         -0.206        -0.512
-    QUAD9     2806      0.6748        1.175         -0.205        -0.512
+    TRI3       744      0.6605        0.264         -0.145        -0.507
+    QUAD4      744      0.6622        0.670         -0.157        -0.492
+    TRI6      2806      0.6643        0.624         -0.201        -0.508
+    QUAD9     2806      0.6644        1.165         -0.200        -0.508
 
   b) Refinamiento de malla (Q9, base empotrada)
 
     Tamaño       GdL   ux cresta       s1 máx   s1 paramento    syy centro
-    3 m          378      0.6739        0.745         -0.199        -0.511
-    2 m          806      0.6745        0.902         -0.205        -0.513
-    1 m         2806      0.6748        1.175         -0.205        -0.512
-    0.75 m      4698      0.6749        1.295         -0.204        -0.512
+    3 m          378      0.6633        0.732         -0.194        -0.508
+    2 m          806      0.6640        0.890         -0.200        -0.509
+    1 m         2806      0.6644        1.165         -0.200        -0.508
+    0.75 m      4698      0.6645        1.287         -0.199        -0.508
 
     El desplazamiento y las tensiones en puntos fijos lejos de las
     esquinas convergen.
@@ -78,17 +84,28 @@ Suelo impermeable: sin subpresión. Valores por metro de presa.
 
   c) Condición de borde en la base (malla Q9 de ~1 m)
 
-    Base           Rx [MN]   Ry [MN]      M pie   ux cresta   s1 paramento    syy centro
-    empotrada      -3.8455    7.4164   -52.0453      0.6748         -0.205        -0.512
-    deslizante     -3.8455    7.4164   -52.0453      1.6149         -0.232        -0.632
+    Base                          Rx [MN]  Ry [MN]     M pie  ux cresta   s1 máx  s1 param. syy centro
+    empotrada                     -3.8455   7.4164   -52.045     0.6644    1.165     -0.200     -0.508
+    rodillo (sin fricción)        -3.8455   7.4164   -52.045     1.5670   26.825     -0.232     -0.634
+    Robin (fundación elástica)    -3.8455   7.4164   -52.045     2.0437    0.196     -0.226     -0.447
 
-    Base deslizante: el nodo del talón toma Rx = -3.8455 MN, es decir
-    TODO el empuje del agua concentrado en un punto. Sin fricción en la
-    base no hay otra forma de equilibrar el empuje.
+    Empotrada = fricción infinita; rodillo = fricción nula: son los dos
+    casos límite de un modelo lineal (la fricción de Coulomb es no lineal).
+    Rodillo: el nodo del talón toma Rx = -3.8455 MN, TODO el empuje del agua
+    en un punto. Sin fricción no hay otra forma de equilibrar el empuje.
+    Como la fricción necesaria (mu = 0.52) es menor que la disponible para
+    hormigón sobre roca (~0.6-0.8), la presa no desliza y el caso
+    empotrado es el más representativo.
+    Robin (E fundación = 20 GPa): la fundación se deforma, la cresta se
+    mueve más, desaparece la singularidad del talón y la presión en la
+    base se acerca a la ley trapecial.
 
-  d) Tensión plana vs deformación plana (Q9 ~1 m, base empotrada)
+  d) Deformación plana (adoptada) vs tensión plana (Q9 ~1 m, base empotrada)
 
-    tensión plana        ux cresta = 0.6748 mm   s1 paramento (y=5 m) = -0.205 MPa
     deformación plana    ux cresta = 0.6644 mm   s1 paramento (y=5 m) = -0.200 MPa
+    tensión plana        ux cresta = 0.6748 mm   s1 paramento (y=5 m) = -0.205 MPa
+
+    La presa es muy larga en z: cada sección no puede deformarse fuera del
+    plano (ezz = 0). Deformación plana es más rígida: E' = E/(1-nu^2).
 
   Figura: results/presa_base_comparacion.png

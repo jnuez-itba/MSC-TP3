@@ -15,10 +15,10 @@ import argparse
 from source.mesh.generators import dam_mesh
 from source.mesh.writer import write_mesh
 from source.mesh.mesh import Mesh
-from source.materials.linear_elastic import LinearElastic
 from source.elements.factory import create_elements
 from source.output.plot import plot_mesh
 from source.dam.geometry import DamGeometry
+from source.dam.material import dam_material
 
 
 # ----------------------------------------------------------------------
@@ -31,9 +31,7 @@ BASE = DEFAULT.base              # 18 m
 FREEBOARD = DEFAULT.freeboard    # 2 m  -> nivel del agua = 28 m
 CREST = DEFAULT.crest            # 3 m
 
-E = 21.0e9                       # hormigón H21 [Pa]
-NU = 0.2
-DENSITY = DEFAULT.concrete_density   # 2400 kg/m3
+# Hormigón H21 en deformación plana (source/dam/material.py)
 
 
 parser = argparse.ArgumentParser(description="Malla de la presa de gravedad")
@@ -53,7 +51,7 @@ if args.out is None:
     args.out = "meshes/presa/presa_" + args.element.lower() + ".mesh"
 
 
-material = LinearElastic(E, NU, DENSITY)
+material = dam_material()
 
 mesh = dam_mesh(
     material,
@@ -69,7 +67,7 @@ mesh = dam_mesh(
 comment = (
     "Presa de gravedad - malla generada con generar_malla_presa.py\n"
     "H = {} m, base = {} m, cresta = {} m, borde libre = {} m, talud aguas arriba = {} m\n"
-    "Elemento {}, tamaño ~{} m\n"
+    "Elemento {}, tamaño ~{} m. Hormigón H21 en deformación plana\n"
     "NodeSets: base, heel (talón), toe (pie), upstream, downstream, crest\n"
     "SideSets: base, upstream, upstream_wet (bajo el agua), downstream, crest"
 ).format(HEIGHT, args.base, args.crest, FREEBOARD, args.batter, args.element, args.size)
