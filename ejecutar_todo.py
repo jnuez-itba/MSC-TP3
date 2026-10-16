@@ -6,9 +6,13 @@ los resultados en la carpeta results/.
 
 Uso (desde la carpeta del repositorio):
 
-    python ejecutar_todo.py              # todo, sin abrir ventanas
-    python ejecutar_todo.py --mostrar    # abre cada gráfico (cerrarlo para seguir)
-    python ejecutar_todo.py --rapido     # saltea los estudios más largos
+    python ejecutar_todo.py                # paso a paso: frena antes de cada paso
+                                           # y muestra los gráficos
+    python ejecutar_todo.py --automatico   # todo seguido, sin ventanas
+    python ejecutar_todo.py --rapido       # saltea los estudios más largos
+
+En el modo paso a paso, cada paso empieza al apretar Enter y cada gráfico se
+abre en una ventana: hay que cerrarla para que el programa siga.
 
 Pasos:
     1. Tests automáticos (pytest)
@@ -29,8 +33,8 @@ import time
 
 
 parser = argparse.ArgumentParser(description="Ejecuta todos los pasos del TP3")
-parser.add_argument("--mostrar", action="store_true",
-                    help="abrir las ventanas de los gráficos")
+parser.add_argument("--automatico", action="store_true",
+                    help="correr todo seguido, sin pausas ni ventanas")
 parser.add_argument("--rapido", action="store_true",
                     help="saltear el estudio comparativo y el FEM de las geometrías")
 args = parser.parse_args()
@@ -40,7 +44,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.makedirs("results", exist_ok=True)
 
 PYTHON = sys.executable
-NO_SHOW = [] if args.mostrar else ["--no-show"]
+NO_SHOW = ["--no-show"] if args.automatico else []
 
 
 STEPS = [
@@ -91,6 +95,11 @@ STEPS.append(
      [PYTHON, "scripts/estudio_geometria.py"] + (["--sin-fem"] if args.rapido else []) + NO_SHOW))
 
 
+# Scripts que abren ventanas con gráficos
+GRAPHIC_SCRIPTS = ["scripts/ejemplo_viga.py", "scripts/generar_malla_presa.py",
+                   "scripts/analisis_presa.py", "scripts/estudio_geometria.py"]
+
+
 def banner(text):
     print()
     print("=" * 76)
@@ -105,6 +114,17 @@ for k, (title, explanation, command) in enumerate(STEPS, start=1):
     banner("PASO {} de {}: {}".format(k, len(STEPS), title))
     print(explanation)
     print("\n> " + " ".join("python" if c == PYTHON else c for c in command))
+
+    if not args.automatico:
+        try:
+            input("\n[Enter] para ejecutar este paso (Ctrl + C para salir) ")
+        except EOFError:
+            pass
+        except KeyboardInterrupt:
+            print("\nEjecución interrumpida.")
+            sys.exit(1)
+        if command[1] in GRAPHIC_SCRIPTS:
+            print("(se abren ventanas con gráficos: cerralas para continuar)")
     print()
 
     start = time.time()

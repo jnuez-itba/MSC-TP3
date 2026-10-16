@@ -32,8 +32,10 @@ terminal, y deja los resultados en `results/`:
 7. Estudio comparativo: elementos, refinamiento y condiciones de borde.
 8. Variaciones de geometría para aumentar el factor de seguridad.
 
-Opciones: `--mostrar` abre cada gráfico (cerrar la ventana para seguir) y
-`--rapido` saltea los estudios más largos. Tarda menos de un minuto.
+Por defecto va **paso a paso**: frena antes de cada paso (seguir con Enter) y
+muestra los gráficos en ventanas (cerrarlas para continuar). Opciones:
+`--automatico` corre todo seguido sin ventanas (las figuras se guardan igual
+en `results/`) y `--rapido` saltea los estudios más largos.
 
 ## Qué hay en este repositorio
 
